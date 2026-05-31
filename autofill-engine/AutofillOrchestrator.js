@@ -19,21 +19,12 @@ async function runAutofill() {
     }
 }
 
-async function runLocalHeuristicAutofill() {
-    const userData = await loadUserData();
-    const allPageFields = getAllFields();
-    
-    console.log(`[AutoApplyMax] Local parser found ${allPageFields.length} fields.`);
-
-    const mapping = createFieldMapping(userData);
-
-    // --- Fill Fields ---
+function runHeuristicFill(allPageFields, mapping) {
     for (const fieldName in mapping) {
         if (!mapping[fieldName]) continue;
         const value = mapping[fieldName];
-
-        // Check if this field maps to a radio/checkbox group on the page
         const fieldKeyword = fieldName.toLowerCase();
+
         const hasRadioGroup = allPageFields.some(f =>
             (f.element.type === 'radio' || f.element.type === 'checkbox') &&
             (f.name.includes(fieldKeyword) || f.label.includes(fieldKeyword) || f.id.includes(fieldKeyword))
@@ -45,23 +36,63 @@ async function runLocalHeuristicAutofill() {
         }
 
         const match = findBestMatch(fieldName, allPageFields);
-        if (match && match.field && match.field.element) {
+        if (match?.field?.element) {
             const element = match.field.element;
-
             if (element.tagName === 'SELECT') {
                 fillSelect(element, value);
             } else {
                 fill(element, value);
             }
-
             applyConfidenceStyle(element, match.score);
             element.dataset.autofilled = 'true';
         }
     }
+}
+
+function buildFieldManifest(allPageFields) {
+    const CONFIDENCE_THRESHOLD = 0.85;
+    const manifest = [];
+
+    allPageFields.forEach((field, i) => {
+        const el = field.element;
+        if (el.type === 'file' || el.type === 'hidden') return;
+
+        const score = parseFloat(el.dataset.autofillScore || '0');
+        const filled = el.dataset.autofilled === 'true';
+        if (filled && score >= CONFIDENCE_THRESHOLD) return;
+
+        const entry = {
+            i,
+            label: field.label || field.id || field.name || '',
+            type: el.tagName === 'SELECT' ? 'select'
+                : el.tagName === 'TEXTAREA' ? 'textarea'
+                : (el.type || 'text'),
+        };
+
+        if (el.tagName === 'SELECT') {
+            entry.options = Array.from(el.options)
+                .map(o => o.text.trim())
+                .filter(t => t && t.length > 0 && !['--', 'select...', 'please select'].includes(t.toLowerCase()));
+        }
+
+        if (entry.label || entry.options?.length) {
+            manifest.push(entry);
+        }
+    });
+
+    return manifest;
+}
+
+async function runLocalHeuristicAutofill() {
+    const userData = await loadUserData();
+    const allPageFields = getAllFields();
+    console.log(`[AutoApplyMax] Local parser found ${allPageFields.length} fields.`);
+    const mapping = createFieldMapping(userData);
+
+    runHeuristicFill(allPageFields, mapping);
 
     await handleResumeUpload(allPageFields);
 
-    // iCIMS cross-origin iframe: send profile to the content script running inside the iframe
     const icimsFrames = document.querySelectorAll('iframe[src*="icims.com"]');
     if (icimsFrames.length > 0) {
         chrome.runtime.sendMessage({ action: 'autofillIcims', userData });
@@ -79,27 +110,49 @@ async function runAiAutofill() {
     const mapping = createFieldMapping(userData);
     const { profileMarkdown } = await chrome.storage.local.get('profileMarkdown');
 
+    // Step 1: heuristic fills easy/high-confidence fields
+    const allPageFields = getAllFields();
+    console.log(`[AutoApplyMax] AI mode — found ${allPageFields.length} fields. Running heuristic first.`);
+    runHeuristicFill(allPageFields, mapping);
+
+    const heuristicFilled = allPageFields.filter(f => f.element.dataset.autofilled === 'true').length;
+    console.log(`[AutoApplyMax] Heuristic filled ${heuristicFilled} fields.`);
+
+    // Step 2: build compact manifest of unfilled / low-confidence fields
+    const manifest = buildFieldManifest(allPageFields);
+
+    if (manifest.length === 0) {
+        console.log('[AutoApplyMax] No fields left for AI. Done.');
+        await handleResumeUpload(allPageFields);
+        highlightRequiredFields(allPageFields);
+        return;
+    }
+
+    console.log(`[AutoApplyMax] Sending ${manifest.length} fields to AI.`);
+
+    // Step 3: AI fills the gaps
     let aiResult = null;
     try {
-        const pageContent = document.documentElement.outerHTML;
-        aiResult = await getAiFieldAnalysis(pageContent, mapping, profileMarkdown || '');
+        aiResult = await getAiFieldAnalysis(manifest, mapping, profileMarkdown || '');
     } catch (err) {
-        console.error('[AutoApplyMax] AI analysis failed, falling back to heuristic:', err);
-        await runLocalHeuristicAutofill();
+        console.error('[AutoApplyMax] AI analysis failed:', err);
+        await handleResumeUpload(allPageFields);
+        highlightRequiredFields(allPageFields);
         return;
     }
 
-    if (!aiResult || !Array.isArray(aiResult.fields) || aiResult.fields.length === 0) {
-        console.warn('[AutoApplyMax] AI returned no fields. Falling back to heuristic.');
-        await runLocalHeuristicAutofill();
+    if (!aiResult?.fields?.length) {
+        console.warn('[AutoApplyMax] AI returned no fields.');
+        await handleResumeUpload(allPageFields);
+        highlightRequiredFields(allPageFields);
         return;
     }
 
-    let filledCount = 0;
-    for (const { selector, value } of aiResult.fields) {
-        if (!selector || !value) continue;
-        const el = document.querySelector(selector);
-        if (!el) continue;
+    // Step 4: apply AI results back by index — no CSS selectors needed
+    let aiFilledCount = 0;
+    for (const { i, value } of aiResult.fields) {
+        if (i == null || !value || !allPageFields[i]) continue;
+        const el = allPageFields[i].element;
 
         if (el.tagName === 'SELECT') {
             fillSelect(el, value);
@@ -112,15 +165,14 @@ async function runAiAutofill() {
 
         el.dataset.autofilled = 'true';
         applyConfidenceStyle(el, 0.95);
-        filledCount++;
+        aiFilledCount++;
     }
 
-    // Resume upload (AI doesn't handle file inputs)
-    const allPageFields = getAllFields();
     await handleResumeUpload(allPageFields);
     highlightRequiredFields(allPageFields);
 
-    console.log(`[AutoApplyMax] AI fill complete. ${filledCount} fields filled.`);
+    const totalFilled = allPageFields.filter(f => f.element.dataset.autofilled === 'true').length;
+    console.log(`[AutoApplyMax] Done. Total filled: ${totalFilled} (heuristic: ${heuristicFilled}, AI: ${aiFilledCount}).`);
 }
 
 async function loadUserData() {

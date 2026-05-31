@@ -95,10 +95,11 @@ function fillRadioOrCheckbox(allPageFields, fieldName, value) {
 }
 
 function applyConfidenceStyle(element, score) {
+    element.dataset.autofillScore = String(score);
     if (score > 0.9) {
-        element.style.border = '2px solid #28a745'; // Green for high confidence
+        element.style.border = '2px solid #28a745';
     } else {
-        element.style.border = '2px solid #ffc107'; // Yellow for medium/low confidence
+        element.style.border = '2px solid #ffc107';
     }
 }
 
