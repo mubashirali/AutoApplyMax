@@ -1,494 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AutoApplyMax</title>
-  <link rel="stylesheet" href="popup.css">
+    <meta charset="UTF-8">
+    <title>AutoApplyMax</title>
+    <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="container">
-    <!-- Header -->
+<div class="container">
     <div class="header">
-      <div class="logo">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3Z" stroke="currentColor" stroke-width="2"/>
-          <path d="M9 11V17M9 9V9.01M15 17V13.5C15 12.1193 13.8807 11 12.5 11C11.1193 11 10 12.1193 10 13.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <div class="title-group">
-          <h1>AutoApplyMax</h1>
-          <span class="beta-badge">BETA</span>
-        </div>
-      </div>
-      <span class="version">v1.5.1</span>
+        <h1>AutoApplyMax</h1>
+        <span class="version">v2.3</span>
     </div>
 
-
-    <!-- CWS Install Banner (shown for GitHub/sideloaded version) -->
-    <div id="cws-banner" style="background:linear-gradient(135deg,#eef5ff,#dceaff);border:1px solid #c7dbff;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:center">
-      <p style="margin:0 0 8px;font-size:12px;font-weight:600;color:#1e40af">You're using the open-source version</p>
-      <p style="margin:0 0 10px;font-size:11px;color:#6b7280;line-height:1.4">Install from Chrome Web Store for AI Resume, Cover Letters, ATS Checker, Dashboard &amp; automatic updates.</p>
-      <a href="https://chromewebstore.google.com/detail/autoapplymax/oeaobljpdipleeanlfjppmlokkajodbk" target="_blank" style="display:inline-block;background:#0a66c2;color:#fff;padding:8px 18px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">Install Full Version Free</a>
-      <button onclick="document.getElementById('cws-banner').style.display='none'" style="display:block;margin:8px auto 0;background:none;border:none;color:#9ca3af;font-size:10px;cursor:pointer">Dismiss</button>
+    <!-- Main Action Button -->
+    <div class="actions">
+        <button id="start-autofill-btn" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.2929 2.29289C14.6834 1.90237 15.3166 1.90237 15.7071 2.29289L21.7071 8.29289C22.0976 8.68342 22.0976 9.31658 21.7071 9.70711L11.7071 19.7071C11.5196 19.8946 11.2652 20 11 20H4C3.44772 20 3 19.5523 3 19V12C3 11.7348 3.10536 11.4804 3.29289 11.2929L14.2929 2.29289Z" stroke="currentColor" stroke-width="2"/><path d="M13 4L19 10" stroke="currentColor" stroke-width="2"/></svg>
+            Start Autofill
+        </button>
     </div>
 
-    <!-- Status Card -->
-    <div class="status-card">
-      <div class="status-item">
-        <span class="status-label">Status</span>
-        <span id="status" class="status-value stopped">Stopped</span>
-      </div>
-      <div class="status-item">
-        <span class="status-label">Applied</span>
-        <span id="applied-count" class="status-number">0</span>
-      </div>
-      <div class="status-item">
-        <span class="status-label">Skipped</span>
-        <span id="skipped-count" class="status-number">0</span>
-      </div>
-    </div>
-
-    <!-- Tabs -->
+    <!-- Tabs for Settings and Data -->
     <div class="tabs">
-      <button class="tab active" data-tab="personal">Personal Info</button>
-      <button class="tab" data-tab="settings">Settings</button>
-      <button class="tab" data-tab="applied">Applied Jobs</button>
-    </div>
-
-    <!-- Personal Info Tab -->
-    <div id="personal-tab" class="tab-content active">
-      <div class="form-row">
-        <div class="form-group">
-          <label>First Name</label>
-          <input type="text" id="firstName" placeholder="John">
-        </div>
-
-        <div class="form-group">
-          <label>Last Name</label>
-          <input type="text" id="lastName" placeholder="Doe">
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="email" placeholder="john.doe@example.com">
-      </div>
-
-      <div class="form-row phone-row">
-        <div class="form-group">
-          <label>Country Code</label>
-          <select id="phoneCountryCode">
-            <!-- North America -->
-            <optgroup label="🌎 North America">
-              <option value="+1">United States (+1)</option>
-              <option value="+1">Canada (+1)</option>
-            </optgroup>
-
-            <!-- Europe -->
-            <optgroup label="🌍 Europe">
-              <option value="+355">Albania (+355)</option>
-              <option value="+376">Andorra (+376)</option>
-              <option value="+43">Austria (+43)</option>
-              <option value="+375">Belarus (+375)</option>
-              <option value="+32">Belgium (+32)</option>
-              <option value="+387">Bosnia & Herzegovina (+387)</option>
-              <option value="+359">Bulgaria (+359)</option>
-              <option value="+385">Croatia (+385)</option>
-              <option value="+357">Cyprus (+357)</option>
-              <option value="+420">Czech Republic (+420)</option>
-              <option value="+45">Denmark (+45)</option>
-              <option value="+372">Estonia (+372)</option>
-              <option value="+358">Finland (+358)</option>
-              <option value="+33">France (+33)</option>
-              <option value="+995">Georgia (+995)</option>
-              <option value="+49">Germany (+49)</option>
-              <option value="+30">Greece (+30)</option>
-              <option value="+36">Hungary (+36)</option>
-              <option value="+354">Iceland (+354)</option>
-              <option value="+353">Ireland (+353)</option>
-              <option value="+39">Italy (+39)</option>
-              <option value="+383">Kosovo (+383)</option>
-              <option value="+371">Latvia (+371)</option>
-              <option value="+370">Lithuania (+370)</option>
-              <option value="+352">Luxembourg (+352)</option>
-              <option value="+356">Malta (+356)</option>
-              <option value="+373">Moldova (+373)</option>
-              <option value="+377">Monaco (+377)</option>
-              <option value="+382">Montenegro (+382)</option>
-              <option value="+31">Netherlands (+31)</option>
-              <option value="+389">North Macedonia (+389)</option>
-              <option value="+47">Norway (+47)</option>
-              <option value="+48">Poland (+48)</option>
-              <option value="+351">Portugal (+351)</option>
-              <option value="+40">Romania (+40)</option>
-              <option value="+381">Serbia (+381)</option>
-              <option value="+421">Slovakia (+421)</option>
-              <option value="+386">Slovenia (+386)</option>
-              <option value="+34">Spain (+34)</option>
-              <option value="+46">Sweden (+46)</option>
-              <option value="+41">Switzerland (+41)</option>
-              <option value="+380">Ukraine (+380)</option>
-              <option value="+44">United Kingdom (+44)</option>
-            </optgroup>
-
-            <!-- Asia -->
-            <optgroup label="🌏 Asia">
-              <option value="+93">Afghanistan (+93)</option>
-              <option value="+374">Armenia (+374)</option>
-              <option value="+994">Azerbaijan (+994)</option>
-              <option value="+880">Bangladesh (+880)</option>
-              <option value="+855">Cambodia (+855)</option>
-              <option value="+86">China (+86)</option>
-              <option value="+852">Hong Kong (+852)</option>
-              <option value="+91">India (+91)</option>
-              <option value="+62">Indonesia (+62)</option>
-              <option value="+972">Israel (+972)</option>
-              <option value="+81">Japan (+81)</option>
-              <option value="+7">Kazakhstan (+7)</option>
-              <option value="+996">Kyrgyzstan (+996)</option>
-              <option value="+856">Laos (+856)</option>
-              <option value="+60">Malaysia (+60)</option>
-              <option value="+976">Mongolia (+976)</option>
-              <option value="+95">Myanmar (+95)</option>
-              <option value="+977">Nepal (+977)</option>
-              <option value="+92">Pakistan (+92)</option>
-              <option value="+63">Philippines (+63)</option>
-              <option value="+65">Singapore (+65)</option>
-              <option value="+82">South Korea (+82)</option>
-              <option value="+94">Sri Lanka (+94)</option>
-              <option value="+886">Taiwan (+886)</option>
-              <option value="+992">Tajikistan (+992)</option>
-              <option value="+66">Thailand (+66)</option>
-              <option value="+90">Turkey (+90)</option>
-              <option value="+993">Turkmenistan (+993)</option>
-              <option value="+998">Uzbekistan (+998)</option>
-              <option value="+84">Vietnam (+84)</option>
-            </optgroup>
-
-            <!-- Middle East -->
-            <optgroup label="🏜️ Middle East">
-              <option value="+973">Bahrain (+973)</option>
-              <option value="+20">Egypt (+20)</option>
-              <option value="+98">Iran (+98)</option>
-              <option value="+964">Iraq (+964)</option>
-              <option value="+962">Jordan (+962)</option>
-              <option value="+965">Kuwait (+965)</option>
-              <option value="+961">Lebanon (+961)</option>
-              <option value="+968">Oman (+968)</option>
-              <option value="+970">Palestine (+970)</option>
-              <option value="+974">Qatar (+974)</option>
-              <option value="+966">Saudi Arabia (+966)</option>
-              <option value="+963">Syria (+963)</option>
-              <option value="+971">UAE (+971)</option>
-              <option value="+967">Yemen (+967)</option>
-            </optgroup>
-
-            <!-- Africa -->
-            <optgroup label="🌍 Africa">
-              <option value="+213">Algeria (+213)</option>
-              <option value="+244">Angola (+244)</option>
-              <option value="+229">Benin (+229)</option>
-              <option value="+267">Botswana (+267)</option>
-              <option value="+226">Burkina Faso (+226)</option>
-              <option value="+237">Cameroon (+237)</option>
-              <option value="+243">DR Congo (+243)</option>
-              <option value="+225">Ivory Coast (+225)</option>
-              <option value="+251">Ethiopia (+251)</option>
-              <option value="+241">Gabon (+241)</option>
-              <option value="+233">Ghana (+233)</option>
-              <option value="+224">Guinea (+224)</option>
-              <option value="+254">Kenya (+254)</option>
-              <option value="+231">Liberia (+231)</option>
-              <option value="+218">Libya (+218)</option>
-              <option value="+261">Madagascar (+261)</option>
-              <option value="+223">Mali (+223)</option>
-              <option value="+222">Mauritania (+222)</option>
-              <option value="+230">Mauritius (+230)</option>
-              <option value="+212">Morocco (+212)</option>
-              <option value="+258">Mozambique (+258)</option>
-              <option value="+264">Namibia (+264)</option>
-              <option value="+227">Niger (+227)</option>
-              <option value="+234">Nigeria (+234)</option>
-              <option value="+250">Rwanda (+250)</option>
-              <option value="+221">Senegal (+221)</option>
-              <option value="+27">South Africa (+27)</option>
-              <option value="+249">Sudan (+249)</option>
-              <option value="+255">Tanzania (+255)</option>
-              <option value="+228">Togo (+228)</option>
-              <option value="+216">Tunisia (+216)</option>
-              <option value="+256">Uganda (+256)</option>
-              <option value="+260">Zambia (+260)</option>
-              <option value="+263">Zimbabwe (+263)</option>
-            </optgroup>
-
-            <!-- Oceania -->
-            <optgroup label="🌊 Oceania">
-              <option value="+61">Australia (+61)</option>
-              <option value="+679">Fiji (+679)</option>
-              <option value="+64">New Zealand (+64)</option>
-              <option value="+675">Papua New Guinea (+675)</option>
-            </optgroup>
-
-            <!-- Latin America & Caribbean -->
-            <optgroup label="🌎 Latin America & Caribbean">
-              <option value="+54">Argentina (+54)</option>
-              <option value="+591">Bolivia (+591)</option>
-              <option value="+55">Brazil (+55)</option>
-              <option value="+56">Chile (+56)</option>
-              <option value="+57">Colombia (+57)</option>
-              <option value="+506">Costa Rica (+506)</option>
-              <option value="+53">Cuba (+53)</option>
-              <option value="+1-809">Dominican Republic (+1-809)</option>
-              <option value="+593">Ecuador (+593)</option>
-              <option value="+503">El Salvador (+503)</option>
-              <option value="+502">Guatemala (+502)</option>
-              <option value="+509">Haiti (+509)</option>
-              <option value="+504">Honduras (+504)</option>
-              <option value="+1-876">Jamaica (+1-876)</option>
-              <option value="+52">Mexico (+52)</option>
-              <option value="+505">Nicaragua (+505)</option>
-              <option value="+507">Panama (+507)</option>
-              <option value="+595">Paraguay (+595)</option>
-              <option value="+51">Peru (+51)</option>
-              <option value="+1-787">Puerto Rico (+1-787)</option>
-              <option value="+1-868">Trinidad & Tobago (+1-868)</option>
-              <option value="+598">Uruguay (+598)</option>
-              <option value="+58">Venezuela (+58)</option>
-            </optgroup>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Phone Number</label>
-          <input type="tel" id="phone" placeholder="1234567890">
-          <small>Without country code or leading zero</small>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>City</label>
-        <input type="text" id="city" placeholder="New York, NY">
-      </div>
-
-      <div class="form-group">
-        <label>Years of Experience</label>
-        <input type="number" id="yearsOfExperience" placeholder="2" value="2">
-        <small>Default answer for "How many years of experience..." questions</small>
-      </div>
-
-      <div class="form-group">
-        <label>Resume / CV Upload</label>
-        <div class="file-upload-wrapper">
-          <input type="file" id="resumeFile" accept=".pdf,.doc,.docx" style="display: none;">
-          <button type="button" id="uploadResumeBtn" class="btn-upload">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Choose File
-          </button>
-          <span id="resumeFileName" class="file-name">No file chosen</span>
-          <button type="button" id="removeResumeBtn" class="btn-remove" style="display: none;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </button>
-        </div>
-        <small>Upload your resume (PDF/DOC/DOCX). Will be used for LinkedIn applications requiring CV upload.</small>
-      </div>
+        <button class="tab active" data-tab="settings">Settings</button>
+        <button class="tab" data-tab="personal">Personal</button>
+        <button class="tab" data-tab="eeo">EEO</button>
+        <button class="tab" data-tab="history">History</button>
     </div>
 
     <!-- Settings Tab -->
-    <div id="settings-tab" class="tab-content">
-      <div class="form-group">
-        <label>Blacklist Keywords</label>
-        <input type="text" id="blacklistKeywords" placeholder="internship, junior, entry-level, stage, alternance">
-        <small>Comma-separated. Jobs containing these words will be skipped</small>
-      </div>
-
-      <div class="form-group">
-        <label>Max Years of Experience Required</label>
-        <input type="number" id="maxYearsRequired" placeholder="3" min="0" max="20" value="3">
-        <small>Skip jobs requiring more years (e.g., "8+ years required" will be skipped if max is 3)</small>
-      </div>
-
-      <div class="form-group">
-        <label>Expected Salary (per year)</label>
-        <input type="number" id="expectedSalary" placeholder="60000" min="0" step="1000">
-        <small>Your expected annual salary (used for salary-related questions)</small>
-      </div>
-
-      <!-- Common Questions Section -->
-      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-        <h3 style="font-size: 14px; font-weight: 600; color: #0a66c2; margin-bottom: 15px;">Common Application Questions</h3>
-
+    <div id="settings-tab" class="tab-content active">
         <div class="form-group">
-          <label>Visa Sponsorship Required?</label>
-          <select id="visaSponsorship">
-            <option value="yes">Yes</option>
-            <option value="no" selected>No</option>
-          </select>
-          <small>Answer to "Do you need visa sponsorship?" questions</small>
+            <label>Autofill Engine</label>
+            <select id="parser-type">
+                <option value="local">Local Heuristic (Free, Private)</option>
+                <option value="ai">AI Enhanced (Requires API Key)</option>
+            </select>
         </div>
-
-        <div class="form-group">
-          <label>Legally Authorized to Work?</label>
-          <select id="legallyAuthorized">
-            <option value="yes" selected>Yes</option>
-            <option value="no">No</option>
-          </select>
-          <small>Answer to work authorization questions</small>
+        <div id="ai-settings" style="display: none;">
+            <div class="form-group">
+                <label>AI Provider URL</label>
+                <input type="text" id="aiProviderUrl" placeholder="https://openrouter.ai/api/v1/chat/completions">
+                <small style="color:#888;font-size:11px;">OpenRouter: openrouter.ai/api/v1/chat/completions &nbsp;|&nbsp; DeepSeek: api.deepseek.com/chat/completions</small>
+            </div>
+            <div class="form-group">
+                <label>Model</label>
+                <input type="text" id="aiModel" placeholder="deepseek/deepseek-chat">
+                <small style="color:#888;font-size:11px;">OpenRouter: deepseek/deepseek-chat, openai/gpt-4o-mini &nbsp;|&nbsp; DeepSeek: deepseek-chat</small>
+            </div>
+            <div class="form-group"><label>AI API Key</label><input type="password" id="aiApiKey"></div>
         </div>
-
-        <div class="form-group">
-          <label>Willing to Relocate?</label>
-          <select id="willingToRelocate">
-            <option value="yes" selected>Yes</option>
-            <option value="no">No</option>
-          </select>
-          <small>Answer to relocation questions</small>
-        </div>
-
-        <div class="form-group">
-          <label>Have Driver's License?</label>
-          <select id="driversLicense">
-            <option value="yes" selected>Yes</option>
-            <option value="no">No</option>
-          </select>
-          <small>Answer to driver's license questions</small>
-        </div>
-      </div>
-
-      <div class="toggle-group">
-        <label class="toggle">
-          <input type="checkbox" id="autoNextPage" checked>
-          <span class="toggle-slider"></span>
-          <span class="toggle-label">Auto next page</span>
-        </label>
-      </div>
     </div>
 
-    <!-- Applied Jobs Tab -->
-    <div id="applied-tab" class="tab-content">
-      <div class="applied-jobs-header">
-        <h3>Applied Jobs (<span id="applied-jobs-count">0</span>)</h3>
-        <button id="clear-applied-jobs" class="btn-small">Clear All</button>
-      </div>
-
-      <div id="applied-jobs-list" class="applied-jobs-list">
-        <div class="empty-state">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M20 6H16V4C16 2.89543 15.1046 2 14 2H10C8.89543 2 8 2.89543 8 4V6H4C2.89543 6 2 6.89543 2 8V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V8C22 6.89543 21.1046 6 20 6Z" stroke="currentColor" stroke-width="2"/>
-            <path d="M8 6V4H16V6" stroke="currentColor" stroke-width="2"/>
-            <path d="M12 11V17M9 14H15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          <p>No applications yet</p>
-          <small>Start applying to see your job applications here</small>
+    <!-- Personal Info Tab -->
+    <div id="personal-tab" class="tab-content">
+        <div class="form-row">
+            <div class="form-group"><label>First Name</label><input type="text" id="firstName"></div>
+            <div class="form-group"><label>Last Name</label><input type="text" id="lastName"></div>
         </div>
-      </div>
-    </div>
-
-    <!-- Auto-save indicator -->
-    <div class="autosave-indicator" id="autosave-indicator">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span>Saved</span>
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="actions">
-      <button id="start-btn" class="btn btn-primary">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M5 3L19 12L5 21V3Z" fill="currentColor"/>
-        </svg>
-        Start
-      </button>
-      <button id="stop-btn" class="btn btn-danger" disabled>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="6" y="6" width="12" height="12" fill="currentColor"/>
-        </svg>
-        Stop
-      </button>
-    </div>
-
-    <!-- Export Section -->
-    <div class="export-section">
-      <button id="export-csv-btn" class="btn btn-export">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Export Applied Jobs (CSV)
-      </button>
-      <button id="reset-counters-btn" class="btn btn-reset">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <path d="M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <path d="M3 21v-5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        Reset Counters
-      </button>
-    </div>
-
-    <!-- Feedback Section -->
-    <div class="feedback-card">
-      <div class="feedback-header">
-        <div class="feedback-icon">💙</div>
-        <div>
-          <h3>Support This Free Tool!</h3>
-          <p>AutoApplyMax is 100% free, built to help job seekers. We're a small project and every bit of support helps!</p>
+        <div class="form-group"><label>Email</label><input type="email" id="email"></div>
+        <div class="form-group"><label>Phone</label><input type="tel" id="phone"></div>
+        <div class="form-group"><label>Address</label><input type="text" id="addressLine1"></div>
+        <div class="form-row">
+            <div class="form-group"><label>City</label><input type="text" id="city"></div>
+            <div class="form-group"><label>Postal Code</label><input type="text" id="postalCode"></div>
         </div>
-      </div>
-      <div class="feedback-items">
-        <div class="feedback-item">
-          <span class="check-icon">⭐</span>
-          <span>Leave a 5-star review on Chrome Web Store</span>
-        </div>
-        <div class="feedback-item">
-          <span class="check-icon">📤</span>
-          <span>Share with friends looking for jobs</span>
-        </div>
-        <div class="feedback-item">
-          <span class="check-icon">💬</span>
-          <span>Join Discord to report bugs & suggest features</span>
-        </div>
-      </div>
-      <div class="feedback-buttons">
-        <a href="https://chromewebstore.google.com/detail/easyapplymax/oeaobljpdipleeanlfjppmlokkajodbk/reviews" target="_blank" class="btn-review">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-          </svg>
-          Leave a Review
-        </a>
-        <a href="https://discord.gg/xWaCXBZbws" target="_blank" class="btn-discord">
-          <svg width="16" height="16" viewBox="0 0 71 55" fill="currentColor">
-            <path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.440769 45.4204 0.525289C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.525289C25.5141 0.443589 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.459 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978Z"/>
-          </svg>
-          Join Discord
-        </a>
-      </div>
+        <div class="form-group"><label>Country</label><input type="text" id="country"></div>
+        <div class="form-group"><label>Skills (comma-separated)</label><textarea id="skills" rows="3"></textarea></div>
     </div>
 
-    <!-- Instructions -->
-    <div class="instructions">
-      <details>
-        <summary>📖 How to use</summary>
-        <ol>
-          <li>Go to LinkedIn and activate <strong>Easy Apply filter</strong></li>
-          <li>Fill in your personal information above</li>
-          <li>Click <strong>Save Config</strong></li>
-          <li>Click <strong>Start</strong> to begin auto-applying</li>
-          <li>Open Browser Console (F12) to see detailed logs</li>
-        </ol>
-      </details>
+    <!-- EEO Tab -->
+    <div id="eeo-tab" class="tab-content">
+        <div class="form-group"><label>Gender</label><input type="text" id="gender"></div>
+        <div class="form-group"><label>Race/Ethnicity</label><input type="text" id="race"></div>
+        <div class="form-group"><label>Veteran Status</label><input type="text" id="veteranStatus"></div>
+        <div class="form-group"><label>Disability Status</label><input type="text" id="disabilityStatus"></div>
+        <div class="form-group"><label>Pronouns</label><input type="text" id="pronouns"></div>
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-      <small>Community-driven project • Follow @Azo92i on Twitter</small>
+    <!-- History Tab (Read-only) -->
+    <div id="history-tab" class="tab-content">
+        <h4>Work History</h4>
+        <div id="work-history-list" class="history-list"></div>
+        <h4>Education</h4>
+        <div id="education-history-list" class="history-list"></div>
     </div>
-  </div>
 
-  <script src="popup-improvements.js"></script>
-  <script src="popup.js"></script>
+</div>
+<script src="popup-improvements.js"></script>
+<script src="popup.js"></script>
 </body>
 </html>
