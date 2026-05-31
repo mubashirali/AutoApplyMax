@@ -121,6 +121,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         'autofill-engine/ai-service.js',
                         'autofill-engine/FormFiller.js',
                         'autofill-engine/HeuristicParser.js',
+                        'autofill-engine/ReportPanel.js',
                         'autofill-engine/adapters/WorkdayAdapter.js',
                         'autofill-engine/AutofillOrchestrator.js'
                     ],
