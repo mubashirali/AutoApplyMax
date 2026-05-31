@@ -77,11 +77,12 @@ async function runLocalHeuristicAutofill() {
 async function runAiAutofill() {
     const userData = await loadUserData();
     const mapping = createFieldMapping(userData);
+    const { profileMarkdown } = await chrome.storage.local.get('profileMarkdown');
 
     let aiResult = null;
     try {
         const pageContent = document.documentElement.outerHTML;
-        aiResult = await getAiFieldAnalysis(pageContent, mapping);
+        aiResult = await getAiFieldAnalysis(pageContent, mapping, profileMarkdown || '');
     } catch (err) {
         console.error('[AutoApplyMax] AI analysis failed, falling back to heuristic:', err);
         await runLocalHeuristicAutofill();

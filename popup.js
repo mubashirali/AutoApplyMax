@@ -23,7 +23,7 @@ async function loadConfig() {
         'gender', 'race', 'veteranStatus', 'disabilityStatus', 'pronouns',
         'parserType', 'aiProviderUrl', 'aiModel', 'aiApiKey'
     ]);
-    const localData = await chrome.storage.local.get(['workHistory', 'educationHistory']);
+    const localData = await chrome.storage.local.get(['workHistory', 'educationHistory', 'profileMarkdown']);
 
     for (const key in syncData) {
         const element = document.getElementById(key);
@@ -33,6 +33,9 @@ async function loadConfig() {
     const parserType = syncData.parserType || 'local';
     document.getElementById('parser-type').value = parserType;
     document.getElementById('ai-settings').style.display = parserType === 'ai' ? 'block' : 'none';
+
+    const profileMarkdownEl = document.getElementById('profileMarkdown');
+    if (profileMarkdownEl) profileMarkdownEl.value = localData.profileMarkdown || '';
 
     const workList = document.getElementById('work-history-list');
     if (localData.workHistory && workList) {
@@ -62,6 +65,8 @@ function setupAutoSave() {
         if (element) element.addEventListener('input', saveConfig);
     });
     document.getElementById('parser-type').addEventListener('change', saveConfig);
+    const profileMarkdownEl = document.getElementById('profileMarkdown');
+    if (profileMarkdownEl) profileMarkdownEl.addEventListener('input', saveConfig);
 }
 
 async function saveConfig() {
@@ -76,6 +81,13 @@ async function saveConfig() {
         if (element) syncData[id] = element.value;
     });
     await chrome.storage.sync.set(syncData);
+
+    // profileMarkdown goes to local storage — too large for sync (8KB limit per key)
+    const profileMarkdownEl = document.getElementById('profileMarkdown');
+    if (profileMarkdownEl) {
+        await chrome.storage.local.set({ profileMarkdown: profileMarkdownEl.value });
+    }
+
     console.log('Configuration saved.');
 }
 

@@ -23,11 +23,66 @@ async function prePopulateProfileData() {
     const localData = {
         educationHistory: [],
         workHistory: [],
+        profileMarkdown: DEFAULT_PROFILE_TEMPLATE,
     };
     await chrome.storage.sync.set(syncData);
     await chrome.storage.local.set(localData);
     console.log('[AutoApplyMax] Profile initialized. Fill in your details in the extension popup.');
 }
+
+const DEFAULT_PROFILE_TEMPLATE = `# My Profile — AI Resume Context
+# The AI uses this file to answer every question on a job application.
+# Edit this with your real information. The more detail you add, the better the AI performs.
+
+## Personal Information
+- Full Name: [First] [Last]
+- Email: [your@email.com]
+- Phone: [+1 555 000 0000]
+- Address: [Street Address]
+- City, State: [City], [State]
+- Country: [Country]
+
+## Work Authorization
+- I am authorized to work in [Country] without requiring visa sponsorship.
+- Sponsorship required: No
+
+## Current Employment
+- Currently employed at [Current Company] as [Current Title]
+
+## Work Experience
+
+### [Company Name] — [Job Title] ([Month Year] – Present)
+[Describe your responsibilities, achievements, and technologies used. The AI uses this to answer experience-level questions.]
+
+### [Previous Company] — [Job Title] ([Month Year] – [Month Year])
+[Description]
+
+## Education
+- [Degree], [Major] — [University Name], [Year]
+
+## Technical Skills
+[List all skills, technologies, tools — e.g.: Java, Spring Boot, AWS, Kubernetes, PostgreSQL, Python, React]
+
+## Certifications
+- [Certification Name], [Issuer], [Year]
+
+## Salary Expectations
+- Expected: $[Amount] USD annually
+
+## Availability
+- Available to start: [Date or "Immediately"]
+
+## Standard Application Answers
+- Referred by anyone: No / N/A
+- Relatives at prospective employer: No
+- Previously employed at prospective employer: No (unless listed in work history above)
+- Agree to background checks: Yes
+- Consent to privacy policy / pre-employment statements: Yes / I Consent
+
+## Additional Context for AI
+[Add anything else the AI should know when answering unusual questions — e.g., specific achievements, why you're changing roles, preferred work style, notable projects]
+`;
+
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'injectAutofillScripts') {

@@ -25,6 +25,7 @@
         <button class="tab active" data-tab="settings">Settings</button>
         <button class="tab" data-tab="personal">Personal</button>
         <button class="tab" data-tab="eeo">EEO</button>
+        <button class="tab" data-tab="profile">Profile</button>
         <button class="tab" data-tab="history">History</button>
     </div>
 
@@ -76,6 +77,14 @@
         <div class="form-group"><label>Veteran Status</label><input type="text" id="veteranStatus"></div>
         <div class="form-group"><label>Disability Status</label><input type="text" id="disabilityStatus"></div>
         <div class="form-group"><label>Pronouns</label><input type="text" id="pronouns"></div>
+    </div>
+
+    <!-- Profile Tab — AI context (Markdown resume) -->
+    <div id="profile-tab" class="tab-content">
+        <p style="font-size:11px;color:#666;margin:0 0 6px;">
+            This is your AI resume context. The AI uses this to answer experience questions, generate background descriptions, and handle company-specific questions. Edit it like a markdown file.
+        </p>
+        <textarea id="profileMarkdown" rows="18" style="font-family:monospace;font-size:11px;width:100%;box-sizing:border-box;resize:vertical;" placeholder="Paste your resume here in markdown format. See the default template pre-filled on first install."></textarea>
     </div>
 
     <!-- History Tab (Read-only) -->
