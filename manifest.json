@@ -1,15 +1,16 @@
 {
   "manifest_version": 3,
   "name": "AutoApplyMax",
-  "version": "1.5.3",
-  "description": "Automate LinkedIn Easy Apply job applications - Works on /jobs/search/ and /jobs/collections/",
+  "version": "2.3.1",
+  "description": "Autofill job applications on any site with a powerful heuristic engine.",
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "tabs"
   ],
   "host_permissions": [
-    "https://www.linkedin.com/*"
+    "<all_urls>"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -22,9 +23,30 @@
   "background": {
     "service_worker": "background.js"
   },
+  "content_scripts": [
+    {
+      "matches": ["*://*.icims.com/jobs/*", "*://*.icims.com/connect/*"],
+      "js": ["content-icims.js"],
+      "all_frames": true,
+      "run_at": "document_idle"
+    }
+  ],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "autofill-engine/vendor/string-similarity.js",
+        "autofill-engine/ai-service.js",
+        "autofill-engine/FormFiller.js",
+        "autofill-engine/HeuristicParser.js",
+        "autofill-engine/adapters/WorkdayAdapter.js",
+        "autofill-engine/AutofillOrchestrator.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }
