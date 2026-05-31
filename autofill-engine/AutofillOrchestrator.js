@@ -128,7 +128,7 @@ async function runAiAutofill() {
         return;
     }
 
-    console.log(`[AutoApplyMax] Sending ${manifest.length} fields to AI.`);
+    console.log(`[AutoApplyMax] Sending ${manifest.length} fields to AI:`, JSON.stringify(manifest, null, 2));
 
     // Step 3: AI fills the gaps
     let aiResult = null;

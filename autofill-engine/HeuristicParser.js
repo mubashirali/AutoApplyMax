@@ -1,4 +1,28 @@
 
+// Walks up ancestor chain to find nearby visible text that acts as a label.
+// Handles ATS platforms (Greenhouse, Ashby, Lever, etc.) that put question text
+// in <p>/<div> siblings rather than <label> elements.
+function getContextLabel(input, doc) {
+    let current = input;
+    for (let depth = 0; depth < 5; depth++) {
+        const parent = current.parentElement;
+        if (!parent || parent === doc.body || parent === doc.documentElement) break;
+
+        for (const child of parent.children) {
+            if (child === current) break;
+            // Skip containers that themselves hold form inputs
+            if (child.querySelector('input, select, textarea')) continue;
+            const text = child.textContent?.trim();
+            if (text && text.length >= 3 && text.length <= 500) {
+                return text;
+            }
+        }
+
+        current = parent;
+    }
+    return '';
+}
+
 function isFieldRequired(input, label) {
     if (input.required || input.getAttribute('aria-required') === 'true' || label.includes('*') || label.includes('(required)')) {
         return true;
@@ -48,6 +72,12 @@ function getAllFields(doc = document) {
         // 6. placeholder as last resort
         if (!label) {
             label = input.getAttribute('placeholder') || '';
+        }
+
+        // 7. Walk up ancestors for preceding label-like text (covers card-style ATS layouts
+        //    where the question is in a <p> or <div> sibling, not a <label> element)
+        if (!label) {
+            label = getContextLabel(input, doc);
         }
 
         fields.push({
