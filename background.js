@@ -1,6 +1,23 @@
 // Service worker for AutoApplyMax
 chrome.runtime.onInstalled.addListener(async (details) => {
-    // Only pre-populate on first install — not on extension updates.
+    // Seed profileMarkdown from profile-default.md if not yet done.
+    // Runs on both first install and first reload after this feature was added.
+    const { profileMarkdownSeeded } = await chrome.storage.local.get('profileMarkdownSeeded');
+    if (!profileMarkdownSeeded) {
+        try {
+            const url = chrome.runtime.getURL('profile-default.md');
+            const res = await fetch(url);
+            if (res.ok) {
+                const profileMarkdown = await res.text();
+                await chrome.storage.local.set({ profileMarkdown, profileMarkdownSeeded: true });
+                console.log('[AutoApplyMax] Profile seeded from profile-default.md.');
+            }
+        } catch (e) {
+            console.warn('[AutoApplyMax] Could not load profile-default.md:', e.message);
+        }
+    }
+
+    // Structured fields: only pre-populate on first install.
     if (details.reason === 'install') {
         const { profilePrepopulated } = await chrome.storage.local.get('profilePrepopulated');
         if (!profilePrepopulated) {

@@ -39,6 +39,7 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "profile-default.md",
         "autofill-engine/vendor/string-similarity.js",
         "autofill-engine/ai-service.js",
         "autofill-engine/FormFiller.js",
