@@ -40,7 +40,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 const tabId = tab.id;
                 await chrome.scripting.executeScript({
                     target: { tabId },
-                    world: 'MAIN', // Required for nativeInputValueSetter to access the page's React instance
+                    // ISOLATED world (default) — chrome.storage and chrome.runtime are available here.
+                    // nativeInputValueSetter still works from ISOLATED world: the DOM element is shared,
+                    // and calling the isolated prototype setter bypasses React's instance-level override
+                    // just as effectively, while DOM events still bubble to MAIN world React listeners.
                     files: [
                         'autofill-engine/vendor/string-similarity.js',
                         'autofill-engine/ai-service.js',
@@ -52,7 +55,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 });
                 await chrome.scripting.executeScript({
                     target: { tabId },
-                    world: 'MAIN', // Must match the world where runAutofill is defined
                     function: () => runAutofill(),
                 });
                 sendResponse({ success: true });
