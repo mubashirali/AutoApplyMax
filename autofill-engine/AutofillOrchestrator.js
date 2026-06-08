@@ -1,5 +1,13 @@
 async function runAutofill() {
     console.log('[AutoApplyMax] Autofill process initiated...');
+
+    // Workday requires a dedicated adapter (custom dropdowns, data-automation-id fields)
+    if (typeof isWorkday === 'function' && isWorkday()) {
+        console.log('[AutoApplyMax] Workday detected — using Workday adapter.');
+        await runWorkdayAutofill();
+        return;
+    }
+
     const config = await chrome.storage.sync.get('parserType');
     const parserType = config.parserType || 'local';
 
@@ -19,13 +27,16 @@ async function runLocalHeuristicAutofill() {
     const mapping = createFieldMapping(userData);
     runHeuristicFill(allPageFields, mapping);
     await handleResumeUpload(allPageFields);
+
+    // Trigger autofill inside iCIMS cross-origin iframes via declared content script
+    chrome.runtime.sendMessage({ action: 'triggerIcimsAutofill', userData });
+
     highlightRequiredFields(allPageFields);
     showReportPanel(allPageFields);
 }
 
 async function runAiAutofill() {
     const userData = await loadUserData();
-    // **THE FIX IS HERE:** Load work and education history.
     const { workHistory, educationHistory } = await chrome.storage.local.get(['workHistory', 'educationHistory']);
 
     const allPageFields = getAllFields();
@@ -37,13 +48,13 @@ async function runAiAutofill() {
         console.log('[AutoApplyMax] No fields left for AI. Done.');
         await handleResumeUpload(allPageFields);
         highlightRequiredFields(allPageFields);
+        showReportPanel(allPageFields);
         return;
     }
 
     console.log(`[AutoApplyMax] Sending ${manifest.length} fields to AI...`);
 
     try {
-        // **THE FIX IS HERE:** Pass the complete history to the AI service.
         const aiResult = await getAiFieldAnalysis(manifest, userData, workHistory, educationHistory);
         if (!aiResult?.fields?.length) {
             console.warn('[AutoApplyMax] AI returned no fields to fill.');
@@ -54,9 +65,9 @@ async function runAiAutofill() {
         for (const { i, value } of aiResult.fields) {
             if (i != null && value && allPageFields[i]) {
                 const el = allPageFields[i].element;
-                fill(el, value); // A generic fill function should handle select/radio/text
+                fill(el, value);
                 el.dataset.autofilled = 'true';
-                applyConfidenceStyle(el, 0.99); // Mark AI fills as high confidence
+                applyConfidenceStyle(el, 0.99);
                 aiFilledCount++;
             }
         }
@@ -71,9 +82,6 @@ async function runAiAutofill() {
         showReportPanel(allPageFields);
     }
 }
-
-// --- Helper functions (buildFieldManifest, runHeuristicFill, etc.) ---
-// These functions are assumed to be correct from the previous file read.
 
 function runHeuristicFill(allPageFields, mapping) {
     for (const fieldName in mapping) {

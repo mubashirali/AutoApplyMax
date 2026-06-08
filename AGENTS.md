@@ -1,8 +1,12 @@
-# AutoApplyMax — Claude Context
+# AutoApplyMax — Agent Context
 
 ## What this is
 
-Chrome MV3 extension that automates LinkedIn Easy Apply job applications. No backend, no build step, no bundler. All data stays local in Chrome storage. The extension is open-source (AGPL-3.0); a paid Chrome Web Store version with AI features exists separately.
+Chrome MV3 extension that autofills job application forms across any ATS platform. The user manually navigates to a job posting and clicks **Start Autofill** — the extension detects form fields, maps them to the user's stored profile, fills them, and highlights anything it couldn't fill so the user can review before submitting.
+
+**This is NOT a bot.** The LinkedIn auto-apply bot (`content-simple.js`) is still present in the repo but is not wired to the UI. The product's primary feature is ATS autofill.
+
+No backend. No build step. No bundler. All data stays local in Chrome storage. Open-source (AGPL-3.0).
 
 ---
 
@@ -10,146 +14,148 @@ Chrome MV3 extension that automates LinkedIn Easy Apply job applications. No bac
 
 | File | Role |
 |---|---|
-| `manifest.json` | Permissions, entry points. LinkedIn-only host permission (`https://www.linkedin.com/*`). Declares version `1.5.3`. |
-| `background.js` | Service worker. Initializes storage on install. Has three message handlers (`incrementCount`, `incrementSkippedCount`, `setRunning`) — but see note below. |
-| `popup.html` | Extension popup shell. Loads scripts via `<script>` tags — no module system. |
-| `popup.css` | Popup styling. LinkedIn blue (#0a66c2) design system, 8px grid. |
-| `popup-improvements.js` | Toast notifications, field validation, first-run onboarding modal. **Must be loaded before `popup.js`**; exposes functions via `window.*`. |
-| `popup.js` | Popup UI logic. Reads/writes Chrome storage, injects content script, sends messages to bot, listens for messages from content script. |
-| `content-simple.js` | The entire bot engine (~2000 lines). Injected on demand when user clicks Start. Never loaded passively. |
-
-**Note on `background.js` message handlers:** The `incrementCount` and `incrementSkippedCount` handlers in `background.js` are dead code. The content script never sends those message types. Counter updates go directly to `chrome.storage.local` and directly to the popup via `chrome.runtime.sendMessage`. The background's `setRunning` handler is the only one still used.
-
-**Note on version strings:** Version numbers are not synchronized across files. `manifest.json` is the authoritative version. `background.js` logs `v1.3.1` on install, `content-simple.js` logs `v1.5.0` in its startup banner. Do not use these strings to identify what version is running — they lag behind.
+| `manifest.json` | MV3 permissions and entry points. `<all_urls>` host permission. `content_scripts` declares `content-icims.js` for iCIMS iframes. Version `3.0.0`. |
+| `background.js` | Service worker. Seeds `profileMarkdown` from `profile-default.md` on install. Handles `injectAutofillScripts` (injects engine into active tab) and `triggerIcimsAutofill` (broadcasts to iCIMS content script). |
+| `popup.html` | Extension popup. "Start Autofill" button + tabs: Settings, Personal, EEO, Profile, History. No module system — scripts via `<script>` tags. |
+| `popup.css` | Popup styling. |
+| `popup.js` | Popup UI logic. Loads/saves profile from storage. Triggers autofill via `injectAutofillScripts` message to background. |
+| `profile-default.md` | Default markdown resume template seeded into `profileMarkdown` on first install. |
+| `content-icims.js` | Content script auto-injected into `*.icims.com` iframes. Listens for `autofillIcims` message and fills iCIMS-specific field IDs. |
+| `autofill-engine/vendor/string-similarity.js` | Dice-coefficient string similarity (`compareTwoStrings`). Self-contained. |
+| `autofill-engine/FormFiller.js` | `fill()` (nativeInputValueSetter for React), `fillSelect()` (fuzzy option matching), `fillRadioOrCheckbox()`, `applyConfidenceStyle()`, `base64ToFile()`, `fillFileInput()`. |
+| `autofill-engine/HeuristicParser.js` | `getAllFields()` — 6-tier label extraction. `findBestMatch()` — scores fields by label/id/name + Dice coefficient. |
+| `autofill-engine/ReportPanel.js` | `showReportPanel()` — floating panel showing fill progress (required vs optional fields). |
+| `autofill-engine/adapters/WorkdayAdapter.js` | `isWorkday()`, `getWorkdayFields()`, `fillWorkdayDropdown()`, `runWorkdayAutofill()`. Handles `data-automation-id` fields and click-based custom dropdowns. |
+| `autofill-engine/AutofillOrchestrator.js` | Entry point: `runAutofill()` routes to Workday adapter or heuristic/AI fill. |
+| `autofill-engine/ai-service.js` | `getAiFieldAnalysis(fieldManifest, userMapping, workHistory, educationHistory)` — calls OpenAI-compatible endpoint. `buildProfileMarkdown()`, `extractJson()`. |
+| `content-simple.js` | Old LinkedIn Easy Apply bot (~2000 lines). Not wired to UI. Dead code kept for reference. |
 
 ---
 
 ## Dev Setup
 
-1. Open `chrome://extensions`, enable Developer Mode, click "Load unpacked", select the repo root.
-2. After editing **popup files**: click the reload icon on the extension card in `chrome://extensions`.
-3. After editing **`content-simple.js`**: reload the extension AND reload the LinkedIn tab (the old injected script lives in the tab until the tab reloads).
-4. Bot logs appear in the **LinkedIn tab's DevTools console** (not the popup console) under the `[LinkedIn Bot]` prefix.
-5. Popup logs appear in the popup's own DevTools (right-click the popup → Inspect).
+1. `chrome://extensions` → Developer Mode → Load Unpacked → select repo root.
+2. After editing any file: click the reload icon in `chrome://extensions`, then reload the active tab.
+3. Engine logs appear in the **active tab's DevTools console** under `[AutoApplyMax]` prefix.
+4. Popup logs appear in the popup's own DevTools (right-click popup → Inspect).
 
 ---
 
-## Business Logic
-
-### Bot decision flow (`mainLoop()` in `content-simple.js`)
+## Autofill Flow
 
 ```
-while running:
-  1. Check daily limit → auto-stop + alert if hit
-  2. Check stuck (no activity > 2 min) → refresh page and continue
-  3. Find job cards: li[data-occludable-job-id]
-  4. For each card:
-     a. Filter by blacklist keywords → skip if matched
-     b. Filter by years required vs user's maxYearsRequired → skip if over
-        (reads job card DOM only — title + metadata chip, NOT the full job detail panel)
-     c. Click job link → wait for detail panel
-     d. Dismiss "Job search safety reminder" modal if present (LinkedIn may show this)
-     e. Click "Easy Apply" button
-     f. Fill multi-step modal (up to 10 steps)
-     g. Submit → find and click Done button
-  5. Go to next page (pagination or infinite scroll depending on page type)
+User clicks "Start Autofill" in popup
+  → popup.js sends `injectAutofillScripts` to background
+  → background.js injects in order:
+      1. vendor/string-similarity.js
+      2. ai-service.js
+      3. FormFiller.js
+      4. HeuristicParser.js
+      5. ReportPanel.js
+      6. adapters/WorkdayAdapter.js
+      7. AutofillOrchestrator.js
+  → background.js calls runAutofill() in tab context
+  → runAutofill():
+      - if Workday detected → runWorkdayAutofill()
+      - else if parserType='ai' → runAiAutofill()
+      - else → runLocalHeuristicAutofill()
+  → runLocalHeuristicAutofill():
+      1. loadUserData() — reads profile from chrome.storage.sync
+      2. getAllFields() — scans DOM + same-origin iframes
+      3. createFieldMapping() — maps profile keys to values
+      4. runHeuristicFill() — scores and fills fields
+      5. handleResumeUpload() — uploads resume from storage
+      6. triggerIcimsAutofill message → background → iCIMS content script
+      7. highlightRequiredFields() — red border on unfilled required fields
+      8. showReportPanel() — floating checklist panel
+  → runAiAutofill():
+      1. Same heuristic first pass
+      2. buildFieldManifest() — collects unfilled fields with index/label/options
+      3. getAiFieldAnalysis() — sends manifest to AI, gets index-based fill values
+      4. Applies AI results
+      5. Resume upload + highlight + report panel
 ```
 
-**`autoNextPage` config field:** This field is shown in the popup Settings tab and saved to sync storage, but the content script does not read it. `mainLoop()` always attempts pagination unconditionally. The field is currently a no-op in the bot engine.
+---
 
-### Message channels
+## Profile Data Model
 
-The content script communicates directly with the popup — it does not route through the background:
+**`chrome.storage.sync`** (text fields, 8KB/item limit):
 
-| Message type | Direction | Purpose |
-|---|---|---|
-| `start` / `stop` | popup → content | Start/stop the bot |
-| `resetCounters` / `clearAppliedJobs` | popup → content | Data management |
-| `botStarted` / `botStopped` | content → popup | Update UI state |
-| `updateCount` / `updateSkippedCount` | content → popup | Update live counters |
-
-### LinkedIn Easy Apply — form types handled
-
-| Form type | How it's handled |
+| Key | Purpose |
 |---|---|
-| Text inputs | `fill()` — sets `.value` then fires `input` + `change` events (required for React/Vue to register the value) |
-| File input (resume) | `DataTransfer` API to set `files` property; uploads once on first application, then selects existing CV |
-| Checkboxes | Auto-checked (consent/terms boxes) |
-| Radio buttons | Answered from user config: visa sponsorship, work auth, relocation, driver's license |
-| Custom dropdowns | LinkedIn non-native dropdowns require focus → open → select; `.value` assignment alone does not work |
-| Language proficiency | Detected by label text, set to a sane default |
+| `firstName`, `lastName` | Name |
+| `email`, `phone` | Contact |
+| `addressLine1`, `city`, `postalCode`, `country` | Address |
+| `skills` | Comma-separated skills string |
+| `gender`, `race`, `veteranStatus`, `disabilityStatus`, `pronouns` | EEO fields |
+| `expectedSalary`, `startDate` | Preferences |
+| `isAuthorizedInUS`, `requireSponsorship` | Work authorization |
+| `parserType` | `'local'` or `'ai'` |
+| `aiProviderUrl`, `aiApiKey`, `aiModel` | AI provider config |
 
-### Page modes
+**`chrome.storage.local`** (large data):
 
-| Mode | URL pattern | Pagination |
-|---|---|---|
-| Search | `/jobs/search/` | Page numbers + Next button |
-| Collections | `/jobs/collections/` | Infinite scroll; fallback selectors apply only here |
+| Key | Purpose |
+|---|---|
+| `resumeFile` | Resume as base64 data URL |
+| `resumeFileName`, `resumeFileType` | Resume metadata |
+| `workHistory` | Array of `{ company, title, startDate, endDate, isCurrent, description }` |
+| `educationHistory` | Array of `{ school, degree }` |
+| `profileMarkdown` | Markdown resume context for AI engine |
+| `profileMarkdownSeeded` | Flag: prevents re-seeding from profile-default.md |
+| `profilePrepopulated` | Flag: prevents re-running structured field init on updates |
 
-Collections mode uses `.jobs-search-results__list-item, .scaffold-layout__list-item` as fallbacks when `li[data-occludable-job-id]` returns nothing. These fallbacks are **collections-only** — do not apply them to search pages.
+---
 
-### Job filtering
+## Field Matching
 
-- **Blacklist**: comma-separated keywords matched case-insensitively against job title + company name. Any match → skip.
-- **Experience filter**: extracts years from the job card's title element (`.job-card-list__title`) and metadata chip (`.job-card-container__metadata-item`) using multilingual regex (EN/FR/ES/DE/IT). Runs on the card in the list **before the job is opened** — it does not have access to the full job description. If LinkedIn moves years-required data out of the card metadata, this filter silently stops working. If no years found → do not skip.
-- **Daily limit**: scans `document.body.innerText` + LinkedIn error elements for known limit strings. On detection: alert the user, stop the bot.
+`findBestMatch(fieldName, allPageFields)`:
+- **1.0** — exact match on `field.id` or `field.name`
+- **0.9** — exact match on `field.label`
+- **0.85** — Dice coefficient > 0.80 on label
+- **0.75** — word-boundary match in combined label+id+name
+- **0.6** — substring match (below threshold, not returned)
 
-### Storage keys
+Returns `null` if best score ≤ 0.7. Fields already autofilled (`.dataset.autofilled = 'true'`) are skipped.
 
-| Key | Storage area | Written by | Purpose |
-|---|---|---|---|
-| `firstName`, `lastName`, `email`, `phone`, `phoneCountryCode`, `city`, `yearsOfExperience`, `maxYearsRequired`, `blacklistKeywords`, `autoNextPage`, `expectedSalary`, `visaSponsorship`, `legallyAuthorized`, `willingToRelocate`, `driversLicense` | sync | popup.js | User config (shared across Chrome profiles) |
-| `resumeFile` | local | popup.js | Resume as base64 data URL (up to 5MB) |
-| `resumeFileName` | local | popup.js | Original filename for display |
-| `resumeFileType` | local | popup.js | MIME type; used by `base64ToFile()` to reconstruct the File object |
-| `appliedCount`, `skippedCount` | local | content-simple.js | Session counters |
-| `appliedJobs` | local | content-simple.js | Array of applied job objects |
-| `isRunning` | local | both | Bot state flag (written by both; content script clears it on load) |
-| `onboardingCompleted` | local | popup-improvements.js | First-run flag |
+`getAllFields()` 6-tier label extraction:
+1. Parent `<label>` wrapping the input
+2. `<label for="id">` association
+3. Previous sibling `<label>`
+4. `aria-label` attribute
+5. `aria-labelledby` — resolves referenced element text
+6. `placeholder` attribute
+7. Walk up ancestors for preceding label-like text (covers card-style layouts)
 
 ---
 
 ## Architecture Decisions
 
-### Why `content-simple.js` is one ~2000-line file
+### Why ISOLATED world (not MAIN)
 
-MV3 content scripts don't support ES modules without a bundler. This project has no build step — files are loaded directly as unpacked. Splitting would require introducing a bundler (webpack, esbuild, etc.), which is a deliberate infrastructure decision, not a casual refactor. Add logic to this file. Do not introduce a bundler without an explicit decision.
+Engine files are injected via `chrome.scripting.executeScript` without `world: 'MAIN'`. ISOLATED world has access to `chrome.*` APIs (storage, runtime). `nativeInputValueSetter` works from ISOLATED world because DOM elements are shared — the isolated prototype setter bypasses React's instance-level value override just as effectively, and DOM events bubble to MAIN world React listeners.
 
-### Why the content script is injected on demand, not in `manifest.json`
+### Why `<all_urls>` host permission
 
-Declaring it in the manifest would auto-inject it on every LinkedIn page load, running passively before the user acts. Instead, `popup.js` calls `chrome.scripting.executeScript()` only when the user clicks Start. **This is a hard security requirement** — the bot must never act without explicit user intent.
+The extension needs to inject into any job application page — Workday, Greenhouse, Lever, Ashby, Workable, custom career pages — all on different domains.
 
-### Why `fill()` and `click()` have dual security guards
+### Why scripts are injected on demand
 
-Two flags protect every automated action:
-- `isRunning` — can be set by storage
-- `userExplicitlyClickedStart` — **only** set in the `start` message handler, cannot be set by storage manipulation or a race
+Scripts are only injected when the user clicks Start Autofill. Declaring them in `manifest.json` content_scripts would auto-inject on every page load, which is unnecessary and intrusive.
 
-If either flag is false, `fill()`/`click()` log a security violation and return early without acting. This exists because content scripts on LinkedIn have access to real form fields and real Apply buttons — an accidental automated click is not recoverable.
+### Why storage is split between sync and local
 
-### Why `discardApplication()` mixes direct `btn.click()` and the guarded `click()`
-
-`discardApplication()` uses **direct** `btn.click()` for the modal dismiss button (the X / Close button) because discard is cleanup — `isRunning` may already be false when it runs. However, other buttons within the same discard flow (e.g. "Continue applying" on LinkedIn's safety reminder modal) go through the guarded `click()`. Rule: any path that requires `isRunning=true` must use the guarded `click()`; cleanup/abort buttons that need to work even after Stop use direct `btn.click()`.
-
-### Why storage is split between `sync` and `local`
-
-`chrome.storage.sync` has an 8KB per-item limit and 100KB total — sufficient for text config (name, email, settings). The resume file can be up to 5MB and cannot fit in sync. Rule: **config → sync** (persists across Chrome profiles), **resume + counters + applied jobs → local**.
-
-### Why `popup-improvements.js` exposes functions via `window.*`
-
-No module system in the popup. `popup-improvements.js` is loaded before `popup.js` via `<script>` tags in `popup.html`. The full export list: `window.showToast`, `window.validateField`, `window.validateAllFields`, `window.setupValidation`, `window.checkOnboarding`. Load order in `popup.html` matters — do not reorder these `<script>` tags.
-
-### Why `background.js` is minimal
-
-MV3 service workers are ephemeral — they terminate when idle and cannot hold long-running state. The background worker only initializes storage on install. All stateful bot logic lives in the content script, which runs in the tab context and stays alive as long as the tab is open. Counter updates and UI state messages go directly between the content script and popup, bypassing the background entirely.
+`chrome.storage.sync` has an 8KB per-item quota. Text profile fields fit. Resume (up to 5MB), work history, education, and profile markdown are too large — they go to `local`.
 
 ---
 
 ## Common Pitfalls
 
-- **Selector changes**: LinkedIn updates its DOM frequently. If the bot stops finding job cards or buttons, first check whether `li[data-occludable-job-id]`, `.artdeco-button`, or modal selectors have changed.
-- **Custom dropdowns**: LinkedIn's dropdowns are not native `<select>` elements. Setting `.value` directly will not work — the UI won't update and the value won't register. Always use the focus/open/click sequence.
-- **`fill()` without events**: Setting `input.value` alone is not enough on React-rendered fields. `fill()` must fire `input` and `change` events or the form framework ignores the value.
-- **Double-injection**: If the content script is injected twice (user clicks Start on an already-running tab), the IIFE at the bottom of `content-simple.js` resets `isRunning=false` and `userExplicitlyClickedStart=false`. The popup UI may still show "Running" (it received `botStarted` from the first injection and has not been cleared). The bot does **not** auto-restart — the user must click Start again.
-- **Resume upload**: `DataTransfer` API for setting file inputs is not universally supported. If LinkedIn changes how their file input works, `fillFileInput()` is the place to look.
-- **`autoNextPage` is a no-op**: The setting is saved and loaded in the popup but not read by the content script. Do not assume it controls pagination.
+- **React inputs**: `fill()` uses `nativeInputValueSetter` + events. Direct `input.value = x` bypasses React's internal state.
+- **Workday**: Always goes through the Workday adapter, not the heuristic engine. `isWorkday()` checks for Workday hostnames and `data-automation-id` presence.
+- **iCIMS**: The `content-icims.js` content script is auto-injected by Chrome into iCIMS iframes. The orchestrator sends a message that background forwards to it — no direct frame access needed.
+- **Cross-origin iframes**: `getAllFields()` tries `iframe.contentDocument` — silently fails for cross-origin iframes. Only iCIMS is supported via the dedicated content script.
+- **String similarity threshold**: Threshold is 0.7. Below that, no match is returned even if a field looks related.
+- **`profileMarkdownSeeded` flag**: Set after first seeding from `profile-default.md`. Clear from `chrome.storage.local` to re-trigger seeding on the next extension reload.
+- **`parser-type` vs `parserType`**: The select element ID in popup.html is `parserType` (matches the storage key). Don't rename it to `parser-type` — the save loop uses `getElementById(key)` to find elements.

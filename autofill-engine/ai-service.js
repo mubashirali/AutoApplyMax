@@ -8,7 +8,6 @@ async function getAiFieldAnalysis(fieldManifest, userMapping, workHistory, educa
         throw new Error('AI Provider URL or API Key is not configured.');
     }
 
-    // **THE FIX IS HERE:** Build a complete profile with work and education history.
     const profileMarkdown = buildProfileMarkdown(userMapping, workHistory, educationHistory);
     const manifestJson = JSON.stringify(fieldManifest, null, 2);
 
@@ -36,21 +35,29 @@ Return ONLY valid JSON: { "fields": [{ "i": <index>, "value": "<answer>" }] }`;
         response_format: { type: 'json_object' },
     };
 
-    // ... (rest of the fetch logic remains the same)
     const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` };
     if (url.includes('openrouter.ai')) {
         headers['HTTP-Referer'] = 'https://github.com/AutoApplyMax/AutoApplyMax';
         headers['X-Title'] = 'AutoApplyMax';
     }
+
     let response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(requestBody) });
+
+    // Some models (e.g. older DeepSeek) don't support response_format — retry without it
     if (!response.ok && response.status === 400) {
         const errText = await response.text();
         if (errText.includes('response_format')) {
             delete requestBody.response_format;
             response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(requestBody) });
-        } else { throw new Error(`AI API error ${response.status}: ${errText}`); }
+        } else {
+            throw new Error(`AI API error ${response.status}: ${errText}`);
+        }
     }
-    if (!response.ok) { throw new Error(`AI API error ${response.status}: ${await response.text()}`); }
+
+    if (!response.ok) {
+        throw new Error(`AI API error ${response.status}: ${await response.text()}`);
+    }
+
     const data = await response.json();
     const rawContent = data.choices?.[0]?.message?.content;
     if (!rawContent) throw new Error('AI API returned an empty response.');

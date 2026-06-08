@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadConfig();
     setupTabs();
     setupAutoSave();
-    setupStartButton(); // New function for the main button
+    setupStartButton();
     setupParserSelection();
 });
 
@@ -29,9 +29,9 @@ async function loadConfig() {
         const element = document.getElementById(key);
         if (element) element.value = syncData[key] || '';
     }
-    
+
     const parserType = syncData.parserType || 'local';
-    document.getElementById('parser-type').value = parserType;
+    document.getElementById('parserType').value = parserType;
     document.getElementById('ai-settings').style.display = parserType === 'ai' ? 'block' : 'none';
 
     const profileMarkdownEl = document.getElementById('profileMarkdown');
@@ -64,7 +64,7 @@ function setupAutoSave() {
         const element = document.getElementById(id);
         if (element) element.addEventListener('input', saveConfig);
     });
-    document.getElementById('parser-type').addEventListener('change', saveConfig);
+    document.getElementById('parserType').addEventListener('change', saveConfig);
     const profileMarkdownEl = document.getElementById('profileMarkdown');
     if (profileMarkdownEl) profileMarkdownEl.addEventListener('input', saveConfig);
 }
@@ -92,7 +92,7 @@ async function saveConfig() {
 }
 
 function setupParserSelection() {
-    const parserTypeSelect = document.getElementById('parser-type');
+    const parserTypeSelect = document.getElementById('parserType');
     const aiSettings = document.getElementById('ai-settings');
     parserTypeSelect.addEventListener('change', (e) => {
         aiSettings.style.display = e.target.value === 'ai' ? 'block' : 'none';
@@ -112,12 +112,10 @@ function setupStartButton() {
         startButton.textContent = 'Filling...';
 
         try {
-            // The background script will handle injecting all necessary files
             const response = await chrome.runtime.sendMessage({ action: 'injectAutofillScripts' });
             if (!response || !response.success) {
                 throw new Error(response?.error || 'Failed to inject scripts.');
             }
-            // Close the popup after starting the process
             window.close();
         } catch (e) {
             console.error('[AutoApplyMax] Error starting autofill:', e);

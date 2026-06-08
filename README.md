@@ -1,205 +1,146 @@
 # AutoApplyMax
 
-**The #1 AI-powered Chrome extension for automated job applications.** Auto-apply on LinkedIn Easy Apply + one-click autofill on Indeed, Glassdoor, WTTJ & any job site — with AI Resume Generation, Cover Letters, ATS Scoring & a full tracking Dashboard.
+**A Chrome extension that autofills job application forms on any ATS platform.**
 
-<div align="center">
+Navigate to a job application page, click **Start Autofill**, and the extension detects form fields, maps them to your stored profile, fills them in, and highlights anything it couldn't fill so you can review before submitting.
 
-[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Install%20Free-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/autoapplymax/oeaobljpdipleeanlfjppmlokkajodbk)
-[![Website](https://img.shields.io/badge/Website-autoapplymax.com-0A66C2?style=for-the-badge&logo=google-chrome&logoColor=white)](https://www.autoapplymax.com)
-[![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/xWaCXBZbws)
-
-**[Install from Chrome Web Store](https://chromewebstore.google.com/detail/autoapplymax/oeaobljpdipleeanlfjppmlokkajodbk)** to get the full experience with automatic updates, AI features & dashboard access.
-
-</div>
-
-> **⚠️ This GitHub repository contains the open-source core of AutoApplyMax (auto-apply + autofill engine). For the full experience including AI Resume Generator, AI Cover Letters, ATS Score Checker, Dashboard & Analytics, install from the [Chrome Web Store](https://chromewebstore.google.com/detail/autoapplymax/oeaobljpdipleeanlfjppmlokkajodbk) and create a free account at [autoapplymax.com](https://www.autoapplymax.com).**
+No backend. No build step. No bundler. All data stays local in Chrome storage. Open-source (AGPL-3.0).
 
 ---
 
-## See It In Action
-
-<div align="center">
-
-[![AutoApplyMax Demo Video](https://img.youtube.com/vi/h7qUmzsk-Ps/maxresdefault.jpg)](https://youtu.be/h7qUmzsk-Ps)
-
-**Watch the 40s demo on YouTube**
-
-</div>
-
----
-
-## Why AutoApplyMax?
-
-| Without AutoApplyMax | With AutoApplyMax |
-|---------------------|-------------------|
-| 3-4 hours/day filling forms | **5 minutes** — set it and go |
-| 5-10 applications/day | **50+ applications/day** |
-| Same resume for every job | **AI-tailored resume per job** |
-| No cover letters (too tedious) | **AI cover letter in 1 click** |
-| Forget where you applied | **Full dashboard with analytics** |
-| No idea if your CV passes ATS | **ATS score checker (target 90%+)** |
-
----
-
-## Full Feature Suite
-
-### 1. Multi-Platform Auto-Apply
-
-One-click automation across 5+ job platforms with human-like behavior:
-
-| Platform | What AutoApplyMax Does |
-|----------|----------------------|
-| **LinkedIn** | Easy Apply automation — fills every field, clicks Submit |
-| **Indeed** | SmartApply multi-step form navigation |
-| **Glassdoor** | One-click application submission |
-| **WTTJ** | Full form completion |
-| **Monster** | Automated form filling & submission |
-| **Any site** | Universal Autofill for any job application form |
-
-### 2. AI Resume Generator (NEW)
-
-Generate a **tailored, ATS-optimized resume** for each job in seconds:
-
-- **3 professional templates** — Modern, Consulting & Harvard
-- **Job-specific keyword matching** — extracts requirements and adapts your resume
-- **ATS compatibility scoring** — target 90%+ to pass Applicant Tracking Systems
-- **Before/After comparison** — see exactly what changed and why
-- **Edit & download** — manual editing, PDF export
-
-> Available on the [AutoApplyMax Dashboard](https://www.autoapplymax.com/dashboard) — sign up free at [autoapplymax.com](https://www.autoapplymax.com)
-
-### 3. AI Cover Letter Generator (NEW)
-
-Personalized cover letters matched to each job description:
-
-- Company-specific personalization based on mission & values
-- Multiple professional tones
-- Job requirement matching
-- 1-click generation from the dashboard
-
-> Available on the [AutoApplyMax Dashboard](https://www.autoapplymax.com/dashboard) — sign up free at [autoapplymax.com](https://www.autoapplymax.com)
-
-### 4. ATS Score Checker (FREE)
-
-Check your resume's ATS compatibility score instantly:
-
-- Upload your CV + paste job description
-- Get keyword match analysis
-- Actionable tips to improve your score
-- **100% free, no login required** — try it now at [autoapplymax.com/tools/ats-score-checker](https://www.autoapplymax.com/tools/ats-score-checker)
-
-### 5. Real-Time Dashboard & Analytics
-
-Track every application in one place at [autoapplymax.com/dashboard](https://www.autoapplymax.com/dashboard):
-
-- **Application history** — every job you applied to
-- **Status tracking** — Applied > Screening > Interview > Offer
-- **Performance analytics** — weekly/monthly stats, response rates
-- **CSV export** — download all your data
-- **Document history** — all generated resumes & cover letters saved
-
-### 6. Smart Form Filling
-
-- Human-like behavior with random delays (avoids detection)
-- Multi-selector detection (XPath + CSS) for robust element finding
-- Auto-retry on failed actions
-- Stuck detection with auto-recovery
-- Session persistence — resume where you left off
-
----
-
-## Install
-
-> **For the best experience, install from the Chrome Web Store.** You'll get automatic updates, AI features, dashboard access, and support.
-
-### Option A: Chrome Web Store (Recommended)
-
-[![Install from Chrome Web Store](https://img.shields.io/badge/Install-Chrome%20Web%20Store-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/autoapplymax/oeaobljpdipleeanlfjppmlokkajodbk)
-
-1. Click the link above
-2. Click "Add to Chrome"
-3. Sign up at [autoapplymax.com](https://www.autoapplymax.com) to unlock AI features & dashboard
-
-### Option B: Developer Mode (this repo)
+## Install (Developer Mode)
 
 1. Clone this repo: `git clone https://github.com/Azoo92i/AutoApplyMax.git`
-2. Go to `chrome://extensions/` → Enable "Developer mode"
-3. Click "Load unpacked" → Select the cloned folder
-4. **Note:** Developer installs don't auto-update. For AI resume/cover letter features and the tracking dashboard, sign up at [autoapplymax.com](https://www.autoapplymax.com)
+2. Open `chrome://extensions/` → enable **Developer mode**
+3. Click **Load unpacked** → select the cloned folder
+4. Navigate to any job application page → click the extension icon → **Start Autofill**
+
+> After editing any file: click the reload icon on the extension card in `chrome://extensions/`, then reload the job page.
 
 ---
 
 ## How It Works
 
 ```
-Install extension → Fill your profile once
-        ↓
-Open LinkedIn/Indeed/etc → Click "Start" in the popup
-        ↓
-AutoApplyMax auto-fills & submits applications
-        ↓
-AI generates tailored resume + cover letter per job
-        ↓
-Dashboard tracks everything in real-time
+User clicks "Start Autofill"
+  → Extension detects form fields on the page (inputs, selects, textareas)
+  → Fields are scored against your profile using label/id/name + fuzzy matching
+  → Matched fields are filled; confidence shown via green (high) / yellow (low) borders
+  → Resume file input is found and uploaded automatically
+  → Report panel shows fill progress (required vs optional fields)
+  → Unfilled required fields highlighted in red for manual review
 ```
 
 ---
 
+## Autofill Engines
 
-## Job Search Tips
+### Local Heuristic (default, free, private)
 
-Based on data from thousands of automated applications:
+Scores each page field against your profile using:
+- Exact match on `id` or `name` attribute → score 1.0
+- Exact match on label text → 0.9
+- Dice-coefficient similarity > 0.80 on label → 0.85
+- Word-boundary match → 0.75
+- Substring match → 0.6 (only accepted above 0.7 threshold)
 
-1. **Apply within 24 hours of posting.** Jobs posted <24h have 3x higher response rates.
-2. **Keep your resume ATS-simple.** Single column, standard fonts, no graphics. Target 70%+ keyword match.
-3. **Volume + quality is the formula.** 40-50 properly formatted applications/day with automation changes the math entirely.
-4. **Use AI to tailor each resume.** A generic resume gets ignored. AutoApplyMax's AI adapts your CV to each job description automatically.
-5. **Track everything.** Use the [dashboard](https://www.autoapplymax.com/dashboard) to see which platforms get the best response rates.
+Handles: text inputs, `<select>` dropdowns (exact + fuzzy match), radio buttons, checkboxes, file inputs (resume upload).
+
+### AI Enhanced (requires API key)
+
+Runs the heuristic pass first, then sends any unfilled fields to an OpenAI-compatible endpoint (OpenRouter, DeepSeek, OpenAI) for intelligent completion. Useful for open-ended experience questions and company-specific prompts.
+
+**Supported providers:**
+
+| Provider | Endpoint URL | Example Model |
+|---|---|---|
+| OpenRouter | `https://openrouter.ai/api/v1/chat/completions` | `deepseek/deepseek-chat` |
+| DeepSeek | `https://api.deepseek.com/chat/completions` | `deepseek-chat` |
+| OpenAI | `https://api.openai.com/v1/chat/completions` | `gpt-4o-mini` |
+
+Configure in **Settings → Autofill Engine → AI Enhanced**.
 
 ---
 
-## Links
+## Platform Support
 
-| | |
+| Platform | Notes |
 |---|---|
-| **Website** | [autoapplymax.com](https://www.autoapplymax.com) |
-| **Dashboard** | [autoapplymax.com/dashboard](https://www.autoapplymax.com/dashboard) |
-| **ATS Checker** | [autoapplymax.com/tools/ats-score-checker](https://www.autoapplymax.com/tools/ats-score-checker) |
-| **Blog** | [autoapplymax.com/blog](https://www.autoapplymax.com/blog) |
-| **Chrome Extension** | [Chrome Web Store](https://chromewebstore.google.com/detail/autoapplymax/oeaobljpdipleeanlfjppmlokkajodbk) |
-| **Discord** | [Join Community](https://discord.gg/xWaCXBZbws) |
-| **Twitter/X** | [@autoapplymax](https://x.com/autoapplymax) |
+| **Greenhouse** | Heuristic (standard HTML form) |
+| **Lever** | Heuristic (standard HTML form) |
+| **Workday** | Dedicated adapter using `data-automation-id`; handles custom dropdown components |
+| **Ashby** | Heuristic + `aria-label` extraction |
+| **iCIMS** | Dedicated content script runs inside cross-origin iframes |
+| **Any ATS** | Heuristic with 6-tier label extraction (label element, `for` association, `aria-label`, `aria-labelledby`, placeholder, ancestor text) |
 
 ---
 
-## Security & Privacy
+## Setup: Your Profile
 
-- All data stored locally in your browser (chrome.storage)
-- Open source — fully transparent code
-- No tracking, no data collection
-- Resume processing uses secure API calls — your data is never stored on external servers
+Fill in your details once in the extension popup:
+
+- **Personal tab** — name, email, phone, address
+- **EEO tab** — gender, race, veteran status, disability status, pronouns
+- **Profile tab** — markdown resume context used by the AI engine
+- **History tab** — read-only view of saved work and education history
+
+The **Profile tab** is a plain-text markdown file the AI reads when answering experience questions, salary expectations, and company-specific prompts. Edit it directly in the popup — the default template is pre-filled on first install from `profile-default.md`.
+
+### Storage layout
+
+| Data | Storage | Why |
+|---|---|---|
+| Text profile fields | `chrome.storage.sync` (8KB limit) | Synced across Chrome profiles |
+| Resume file (up to 5MB), work history, education, profile markdown | `chrome.storage.local` | Too large for sync quota |
+
+---
+
+## File Map
+
+| File | Role |
+|---|---|
+| `manifest.json` | MV3 permissions, injection targets, iCIMS content script declaration |
+| `background.js` | Service worker: seeds profile on install, handles script injection, forwards iCIMS messages |
+| `popup.html` / `popup.js` / `popup.css` | Extension popup UI — profile tabs, settings, start button |
+| `profile-default.md` | Default AI profile template seeded on first install |
+| `content-icims.js` | Content script auto-injected into iCIMS iframes (`*.icims.com`) |
+| `autofill-engine/vendor/string-similarity.js` | Dice-coefficient string similarity (`compareTwoStrings`) |
+| `autofill-engine/FormFiller.js` | `fill()` (nativeInputValueSetter for React), `fillSelect()`, `fillRadioOrCheckbox()`, resume upload |
+| `autofill-engine/HeuristicParser.js` | `getAllFields()` — 6-tier label extraction; `findBestMatch()` — fuzzy scoring |
+| `autofill-engine/ReportPanel.js` | Floating report panel showing field fill progress |
+| `autofill-engine/adapters/WorkdayAdapter.js` | Workday-specific adapter: `data-automation-id` lookup, custom dropdown click-fill |
+| `autofill-engine/AutofillOrchestrator.js` | Entry point: routes to Workday adapter or heuristic/AI fill |
+| `autofill-engine/ai-service.js` | Calls OpenAI-compatible endpoint with field manifest + profile markdown |
+| `content-simple.js` | Old LinkedIn Easy Apply bot (~2000 lines). Not wired to UI. Kept for reference. |
+
+---
+
+## Dev Setup
+
+1. Load unpacked from `chrome://extensions/` (see Install above).
+2. Engine logs appear in the **active tab's DevTools console** under `[AutoApplyMax]` prefix.
+3. Popup logs appear in the popup's own DevTools (right-click popup → Inspect).
+4. After any file edit: reload the extension card, then reload the job page.
+
+**Testing:** Open any ATS job application page (Greenhouse, Lever, Workday, etc.), click Start Autofill, watch the console for field matching output and the on-page report panel.
+
+---
+
+## Known Limitations
+
+- **Custom dropdowns (non-Workday)**: Ashby and some Lever pages use `div`-based dropdowns not captured by `getAllFields()`. Workday is handled via the dedicated adapter.
+- **Cross-origin iframes**: Only iCIMS is supported via a declared content script. Other ATS platforms that embed forms in cross-origin iframes will not be autofilled.
+- **React inputs**: Uses `nativeInputValueSetter` to trigger React's synthetic event system. Works in ISOLATED world (Chrome MV3 default).
 
 ---
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-- Report bugs via [Issues](https://github.com/Azoo92i/EAM-/issues)
-- Suggest features on [Discord](https://discord.gg/xWaCXBZbws)
+- Report bugs via [Issues](https://github.com/Azoo92i/AutoApplyMax/issues)
+- PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
 ## License
 
 Licensed under **GNU Affero General Public License v3.0 (AGPL-3.0)** — see [LICENSE](LICENSE).
-
----
-
-<div align="center">
-
-**AutoApplyMax — Go from 5 to 50+ job applications per day.**
-
-**[Install Free from Chrome Web Store](https://chromewebstore.google.com/detail/autoapplymax/oeaobljpdipleeanlfjppmlokkajodbk)** | **[Visit autoapplymax.com](https://www.autoapplymax.com)**
-
-</div>
