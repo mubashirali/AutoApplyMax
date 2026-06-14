@@ -31,6 +31,25 @@
 
     <!-- Settings Tab -->
     <div id="settings-tab" class="tab-content active">
+        <!-- Resume Upload -->
+        <div class="form-group">
+            <label>Resume / CV</label>
+            <div class="file-upload-wrapper">
+                <label for="resume-upload" class="btn-upload">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Upload Resume
+                </label>
+                <input type="file" id="resume-upload" accept=".pdf,.doc,.docx" style="display:none">
+                <span id="resume-name" class="file-name">No resume uploaded</span>
+                <button id="resume-remove" class="btn-remove" title="Remove resume" style="display:none">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <small>Stored locally in your browser. Auto-uploaded to resume fields during autofill.</small>
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:0 0 var(--space-4);">
+
         <div class="form-group">
             <label>Autofill Engine</label>
             <select id="parserType">
@@ -64,9 +83,14 @@
         <div class="form-group"><label>Address</label><input type="text" id="addressLine1"></div>
         <div class="form-row">
             <div class="form-group"><label>City</label><input type="text" id="city"></div>
-            <div class="form-group"><label>Postal Code</label><input type="text" id="postalCode"></div>
+            <div class="form-group"><label>State / Province</label><input type="text" id="stateProvince"></div>
         </div>
-        <div class="form-group"><label>Country</label><input type="text" id="country"></div>
+        <div class="form-row">
+            <div class="form-group"><label>Postal Code</label><input type="text" id="postalCode"></div>
+            <div class="form-group"><label>Country</label><input type="text" id="country"></div>
+        </div>
+        <div class="form-group"><label>LinkedIn URL</label><input type="url" id="linkedinUrl" placeholder="https://linkedin.com/in/yourname"></div>
+        <div class="form-group"><label>Website / Portfolio</label><input type="url" id="websiteUrl" placeholder="https://yourwebsite.com"></div>
         <div class="form-group"><label>Skills (comma-separated)</label><textarea id="skills" rows="3"></textarea></div>
     </div>
 
@@ -87,11 +111,18 @@
         <textarea id="profileMarkdown" rows="18" style="font-family:monospace;font-size:11px;width:100%;box-sizing:border-box;resize:vertical;" placeholder="Paste your resume here in markdown format. See the default template pre-filled on first install."></textarea>
     </div>
 
-    <!-- History Tab (Read-only) -->
+    <!-- History Tab (Editable) -->
     <div id="history-tab" class="tab-content">
-        <h4>Work History</h4>
+        <div class="hist-section-header">
+            <h4>Work History</h4>
+            <button id="add-work-btn" class="btn-add-hist">+ Add</button>
+        </div>
         <div id="work-history-list" class="history-list"></div>
-        <h4>Education</h4>
+
+        <div class="hist-section-header">
+            <h4>Education</h4>
+            <button id="add-edu-btn" class="btn-add-hist">+ Add</button>
+        </div>
         <div id="education-history-list" class="history-list"></div>
     </div>
 

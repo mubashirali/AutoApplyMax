@@ -65,13 +65,20 @@ body {
   background: var(--bg-secondary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Chrome popups clip at ~600px — bound the body so flex children can scroll */
+  max-height: 560px;
+  overflow: hidden;
 }
 
 .container {
   width: 400px;
+  max-height: 560px;
   background: var(--bg-gradient);
   box-shadow: var(--shadow-xl);
   border-radius: var(--radius-lg);
+  /* flex column so tab-content can take remaining height and scroll */
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
@@ -241,15 +248,26 @@ body {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
+  /* Horizontal scroll so all 5 tabs are reachable without clipping */
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tab {
-  flex: 1;
-  padding: var(--space-3) var(--space-4);
+  /* Don't force equal width — let each tab be as wide as its label */
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: var(--space-2) var(--space-3);
   background: transparent;
   border: 2px solid transparent;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   position: relative;
@@ -289,6 +307,10 @@ body {
   display: none;
   padding: var(--space-5);
   animation: fadeIn 0.3s ease;
+  /* Scrollable: takes remaining height in the flex container */
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .tab-content.active {
@@ -334,8 +356,10 @@ label {
 input[type="text"],
 input[type="email"],
 input[type="tel"],
+input[type="url"],
 input[type="number"],
-select {
+select,
+textarea {
   width: 100%;
   padding: 10px var(--space-3);
   border: 2px solid var(--border);
@@ -347,13 +371,20 @@ select {
   font-family: inherit;
 }
 
+textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
 input:hover,
-select:hover {
+select:hover,
+textarea:hover {
   border-color: var(--primary-light);
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 4px rgba(10, 102, 194, 0.1);
@@ -1124,4 +1155,150 @@ small {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary-light);
+}
+
+/* ============================================
+   HISTORY TAB — Editable Work & Education
+   ============================================ */
+.hist-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.hist-section-header:not(:first-child) {
+  margin-top: var(--space-5);
+}
+
+.hist-section-header h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.btn-add-hist {
+  padding: 4px 12px;
+  background: var(--primary-gradient);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add-hist:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(10, 102, 194, 0.3);
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Accordion card */
+.hist-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+}
+
+.hist-card[open] {
+  box-shadow: var(--shadow-md);
+}
+
+.hist-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px var(--space-3);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  gap: var(--space-2);
+}
+
+.hist-summary::-webkit-details-marker { display: none; }
+.hist-summary::marker { display: none; }
+
+.hist-card[open] > .hist-summary {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.hist-meta {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.hist-meta strong {
+  display: block;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.hist-meta em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.hist-dates {
+  display: block;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.btn-hist-del {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: none;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: #dc2626;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  transition: background 0.15s;
+}
+
+.btn-hist-del:hover {
+  background: #fee2e2;
+}
+
+.hist-form {
+  padding: var(--space-3);
+}
+
+.hist-form .form-group {
+  margin-bottom: var(--space-3);
+}
+
+.hist-check-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: normal;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.hist-empty {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: var(--space-4);
+  margin: 0;
 }

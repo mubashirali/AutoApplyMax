@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupAutoSave();
     setupStartButton();
     setupParserSelection();
+    setupResumeUpload();
+    document.getElementById('add-work-btn').addEventListener('click', addWorkEntry);
+    document.getElementById('add-edu-btn').addEventListener('click', addEduEntry);
 });
 
 function setupTabs() {
@@ -19,11 +22,12 @@ function setupTabs() {
 
 async function loadConfig() {
     const syncData = await chrome.storage.sync.get([
-        'firstName', 'lastName', 'email', 'phone', 'addressLine1', 'city', 'postalCode', 'country', 'skills',
+        'firstName', 'lastName', 'email', 'phone', 'addressLine1', 'city', 'stateProvince', 'postalCode', 'country', 'skills',
+        'linkedinUrl', 'websiteUrl',
         'gender', 'race', 'veteranStatus', 'disabilityStatus', 'pronouns',
         'parserType', 'aiProviderUrl', 'aiModel', 'aiApiKey'
     ]);
-    const localData = await chrome.storage.local.get(['workHistory', 'educationHistory', 'profileMarkdown']);
+    const localData = await chrome.storage.local.get(['workHistory', 'educationHistory', 'profileMarkdown', 'resumeFileName']);
 
     for (const key in syncData) {
         const element = document.getElementById(key);
@@ -37,26 +41,16 @@ async function loadConfig() {
     const profileMarkdownEl = document.getElementById('profileMarkdown');
     if (profileMarkdownEl) profileMarkdownEl.value = localData.profileMarkdown || '';
 
-    const workList = document.getElementById('work-history-list');
-    if (localData.workHistory && workList) {
-        workList.innerHTML = localData.workHistory.map(job => `
-            <div class="history-item">
-                <strong>${job.title}</strong> at ${job.company}
-                <details><summary>View Description</summary><p>${job.description?.replace(/\n/g, '<br>') || ''}</p></details>
-            </div>
-        `).join('');
-    }
-    const eduList = document.getElementById('education-history-list');
-    if (localData.educationHistory && eduList) {
-        eduList.innerHTML = localData.educationHistory.map(edu => `
-            <div class="history-item"><strong>${edu.degree}</strong> from ${edu.school}</div>
-        `).join('');
-    }
+    setResumeDisplay(localData.resumeFileName || null);
+
+    renderWorkHistory(localData.workHistory || []);
+    renderEduHistory(localData.educationHistory || []);
 }
 
 function setupAutoSave() {
     const fieldsToSave = [
-        'firstName', 'lastName', 'email', 'phone', 'addressLine1', 'city', 'postalCode', 'country', 'skills',
+        'firstName', 'lastName', 'email', 'phone', 'addressLine1', 'city', 'stateProvince', 'postalCode', 'country', 'skills',
+        'linkedinUrl', 'websiteUrl',
         'gender', 'race', 'veteranStatus', 'disabilityStatus', 'pronouns',
         'aiProviderUrl', 'aiModel', 'aiApiKey'
     ];
@@ -72,7 +66,8 @@ function setupAutoSave() {
 async function saveConfig() {
     const syncData = {};
     const fieldsToSave = [
-        'firstName', 'lastName', 'email', 'phone', 'addressLine1', 'city', 'postalCode', 'country', 'skills',
+        'firstName', 'lastName', 'email', 'phone', 'addressLine1', 'city', 'stateProvince', 'postalCode', 'country', 'skills',
+        'linkedinUrl', 'websiteUrl',
         'gender', 'race', 'veteranStatus', 'disabilityStatus', 'pronouns',
         'parserType', 'aiProviderUrl', 'aiModel', 'aiApiKey'
     ];
@@ -96,6 +91,177 @@ function setupParserSelection() {
     const aiSettings = document.getElementById('ai-settings');
     parserTypeSelect.addEventListener('change', (e) => {
         aiSettings.style.display = e.target.value === 'ai' ? 'block' : 'none';
+    });
+}
+
+// ── History Tab CRUD ─────────────────────────────────────────────────────────
+
+let _workHistory = [];
+let _eduHistory = [];
+
+function escHtml(s) {
+    return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderWorkHistory(list) {
+    _workHistory = list.map(j => ({ ...j }));
+    const el = document.getElementById('work-history-list');
+    if (!_workHistory.length) {
+        el.innerHTML = '<p class="hist-empty">No entries. Click + Add to add one.</p>';
+        return;
+    }
+    el.innerHTML = _workHistory.map((job, i) => `
+        <details class="hist-card">
+            <summary class="hist-summary">
+                <span class="hist-meta">
+                    <strong>${escHtml(job.title || 'Untitled')}</strong>
+                    ${job.company ? `<em> · ${escHtml(job.company)}</em>` : ''}
+                    <span class="hist-dates">${escHtml(job.startDate || '')}${job.isCurrent ? ' – Present' : job.endDate ? ' – ' + escHtml(job.endDate) : ''}</span>
+                </span>
+                <button class="btn-hist-del" data-t="work" data-i="${i}">✕</button>
+            </summary>
+            <div class="hist-form">
+                <div class="form-row">
+                    <div class="form-group"><label>Title</label><input type="text" data-t="work" data-i="${i}" data-f="title" value="${escHtml(job.title||'')}"></div>
+                    <div class="form-group"><label>Company</label><input type="text" data-t="work" data-i="${i}" data-f="company" value="${escHtml(job.company||'')}"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Start</label><input type="text" placeholder="2020" data-t="work" data-i="${i}" data-f="startDate" value="${escHtml(job.startDate||'')}"></div>
+                    <div class="form-group"><label>End</label><input type="text" placeholder="2022" data-t="work" data-i="${i}" data-f="endDate" value="${escHtml(job.endDate||'')}"></div>
+                </div>
+                <div class="form-group">
+                    <label class="hist-check-label">
+                        <input type="checkbox" data-t="work" data-i="${i}" data-f="isCurrent" ${job.isCurrent ? 'checked' : ''}> Currently working here
+                    </label>
+                </div>
+                <div class="form-group"><label>Description</label><textarea data-t="work" data-i="${i}" data-f="description" rows="4">${escHtml(job.description||'')}</textarea></div>
+            </div>
+        </details>
+    `).join('');
+    attachHistListeners(el, 'work');
+}
+
+function renderEduHistory(list) {
+    _eduHistory = list.map(e => ({ ...e }));
+    const el = document.getElementById('education-history-list');
+    if (!_eduHistory.length) {
+        el.innerHTML = '<p class="hist-empty">No entries. Click + Add to add one.</p>';
+        return;
+    }
+    el.innerHTML = _eduHistory.map((edu, i) => `
+        <details class="hist-card">
+            <summary class="hist-summary">
+                <span class="hist-meta">
+                    <strong>${escHtml(edu.degree || 'Untitled')}</strong>
+                    ${edu.school ? `<em> · ${escHtml(edu.school)}</em>` : ''}
+                </span>
+                <button class="btn-hist-del" data-t="edu" data-i="${i}">✕</button>
+            </summary>
+            <div class="hist-form">
+                <div class="form-group"><label>Degree / Qualification</label><input type="text" data-t="edu" data-i="${i}" data-f="degree" value="${escHtml(edu.degree||'')}"></div>
+                <div class="form-group"><label>School / Institution</label><input type="text" data-t="edu" data-i="${i}" data-f="school" value="${escHtml(edu.school||'')}"></div>
+            </div>
+        </details>
+    `).join('');
+    attachHistListeners(el, 'edu');
+}
+
+function attachHistListeners(container, type) {
+    container.querySelectorAll('[data-f]').forEach(el => {
+        el.addEventListener(el.tagName === 'TEXTAREA' || el.type === 'text' ? 'input' : 'change', onHistChange);
+    });
+    container.querySelectorAll('.btn-hist-del').forEach(btn => {
+        btn.addEventListener('click', onHistDelete);
+    });
+}
+
+function onHistChange(e) {
+    const { t: type, i, f } = e.currentTarget.dataset;
+    const arr = type === 'work' ? _workHistory : _eduHistory;
+    arr[parseInt(i)][f] = e.currentTarget.type === 'checkbox' ? e.currentTarget.checked : e.currentTarget.value;
+    saveHistDebounced();
+}
+
+function onHistDelete(e) {
+    e.stopPropagation();
+    const { t: type, i } = e.currentTarget.dataset;
+    if (type === 'work') {
+        _workHistory.splice(parseInt(i), 1);
+        renderWorkHistory(_workHistory);
+    } else {
+        _eduHistory.splice(parseInt(i), 1);
+        renderEduHistory(_eduHistory);
+    }
+    saveHistory();
+}
+
+function addWorkEntry() {
+    _workHistory.push({ company: '', title: '', startDate: '', endDate: '', isCurrent: false, description: '' });
+    renderWorkHistory(_workHistory);
+    const cards = document.querySelectorAll('#work-history-list .hist-card');
+    if (cards.length) cards[cards.length - 1].open = true;
+    saveHistory();
+}
+
+function addEduEntry() {
+    _eduHistory.push({ school: '', degree: '' });
+    renderEduHistory(_eduHistory);
+    const cards = document.querySelectorAll('#education-history-list .hist-card');
+    if (cards.length) cards[cards.length - 1].open = true;
+    saveHistory();
+}
+
+let _histSaveTimer = null;
+function saveHistDebounced() {
+    clearTimeout(_histSaveTimer);
+    _histSaveTimer = setTimeout(saveHistory, 600);
+}
+
+async function saveHistory() {
+    await chrome.storage.local.set({ workHistory: _workHistory, educationHistory: _eduHistory });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+function setResumeDisplay(fileName) {
+    const nameEl = document.getElementById('resume-name');
+    const removeBtn = document.getElementById('resume-remove');
+    if (fileName) {
+        nameEl.textContent = fileName;
+        nameEl.classList.add('has-file');
+        removeBtn.style.display = 'inline-flex';
+    } else {
+        nameEl.textContent = 'No resume uploaded';
+        nameEl.classList.remove('has-file');
+        removeBtn.style.display = 'none';
+    }
+}
+
+function setupResumeUpload() {
+    const input = document.getElementById('resume-upload');
+    const removeBtn = document.getElementById('resume-remove');
+
+    input.addEventListener('change', async () => {
+        const file = input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            await chrome.storage.local.set({
+                resumeFile: e.target.result,
+                resumeFileName: file.name,
+                resumeFileType: file.type,
+            });
+            setResumeDisplay(file.name);
+            console.log('[AutoApplyMax] Resume saved:', file.name);
+        };
+        reader.readAsDataURL(file);
+        input.value = ''; // reset so same file can be re-uploaded
+    });
+
+    removeBtn.addEventListener('click', async () => {
+        await chrome.storage.local.remove(['resumeFile', 'resumeFileName', 'resumeFileType']);
+        setResumeDisplay(null);
     });
 }
 

@@ -1,4 +1,4 @@
-async function getAiFieldAnalysis(fieldManifest, userMapping, workHistory, educationHistory) {
+async function getAiFieldAnalysis(fieldManifest, userMapping, workHistory, educationHistory, profileMarkdown, pageContext) {
     const config = await chrome.storage.sync.get(['aiProviderUrl', 'aiApiKey', 'aiModel']);
     const url = config.aiProviderUrl?.trim();
     const apiKey = config.aiApiKey?.trim();
@@ -8,23 +8,60 @@ async function getAiFieldAnalysis(fieldManifest, userMapping, workHistory, educa
         throw new Error('AI Provider URL or API Key is not configured.');
     }
 
-    const profileMarkdown = buildProfileMarkdown(userMapping, workHistory, educationHistory);
     const manifestJson = JSON.stringify(fieldManifest, null, 2);
+    const u = userMapping;
 
-    const prompt = `You are a job application assistant. Fill the form fields below using the applicant's profile.
+    // Use the rich profileMarkdown if available; fall back to structured data only
+    const profileSection = profileMarkdown
+        ? profileMarkdown
+        : buildProfileMarkdown(userMapping, workHistory, educationHistory);
 
-## Applicant Profile
-${profileMarkdown}
+    const prompt = `You are filling out a job application form on behalf of the applicant. Answer as many fields as possible.
 
-## Form Fields (only those needing AI judgment)
+## Job Context
+- Page: ${pageContext?.title || '(unknown)'}
+- URL: ${pageContext?.url || '(unknown)'}
+
+## Applicant's Full Profile
+${profileSection}
+
+## Quick Reference
+- Name: ${u.firstName || ''} ${u.lastName || ''}
+- Email: ${u.email || ''}
+- Phone: ${u.phone || ''}
+- Location: ${u.city || ''}${u.stateProvince ? ', ' + u.stateProvince : ''}, ${u.country || ''}
+- LinkedIn: ${u.linkedinUrl || 'see profile above'}
+- Website: ${u.websiteUrl || 'see profile above'}
+- Skills: ${u.skills || ''}
+- Expected Salary: ${u.expectedSalary || ''}
+- Available From: ${u.startDate || ''}
+- US Work Auth: ${u.isAuthorizedInUS || 'Yes'}
+- Visa Sponsorship Needed: ${u.requireSponsorship || 'No'}
+
+## Unfilled Form Fields
 ${manifestJson}
 
-## Rules
-- Answer fields based on the profile. Use the job descriptions from the work history to answer experience-related questions.
-- For SELECT fields, the value must exactly match one of the provided options.
-- For open text fields (textarea), answer factually and concisely based on the profile.
-- Acknowledge consent/privacy policy fields with an affirmative answer.
-- Skip file inputs. Only include fields you can answer confidently.
+## Field Type Rules — STRICTLY FOLLOW THESE
+Each field has a "type". Your answer format depends on the type:
+
+- **select** — You MUST pick exactly one string from the "options" array. Do not invent values.
+- **radio** — You MUST pick exactly one string from the "options" array. Do not invent values.
+- **checkbox** — Answer must be "true" (check it) or "false" (leave unchecked).
+- **textarea** — Write a complete, professional multi-sentence answer in first person.
+- **text / email / tel / url / number** — Write the appropriate value (email address, phone number, URL, etc.).
+
+## Content Rules
+1. Fill ALL fields you can reasonably answer — be comprehensive, not conservative.
+2. Write text answers in first person, professional tone.
+3. "Why are you interested in [company]?" — Write a compelling 2-3 sentence answer connecting the applicant's experience/skills to the company's domain. Use the page title/URL for company context.
+4. LinkedIn URL (type=url or type=text labelled "linkedin") — provide the LinkedIn URL from the profile (search for linkedin.com link).
+5. Website/portfolio URL fields — provide the personal website URL from the profile.
+6. "How did you hear about us?" open-text follow-ups — write "LinkedIn" or "online job board".
+7. Referral name/email fields — if no referral in profile, write "N/A".
+8. Conditional questions ("if you answered X, share Y") — only answer if the condition clearly applies.
+9. Consent, acknowledgment, agreement fields — always affirm ("Yes", "I agree", or "true" for checkboxes).
+10. Salary fields — use the expected salary from quick reference.
+11. Skip file upload fields (type=file).
 
 ## Output
 Return ONLY valid JSON: { "fields": [{ "i": <index>, "value": "<answer>" }] }`;
@@ -41,32 +78,31 @@ Return ONLY valid JSON: { "fields": [{ "i": <index>, "value": "<answer>" }] }`;
         headers['X-Title'] = 'AutoApplyMax';
     }
 
-    let response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(requestBody) });
+    // Fetch is routed through the background service worker to avoid CORS.
+    // Content scripts run as the page's origin — AI providers block cross-origin requests.
+    // The service worker runs as the extension origin and bypasses CORS entirely.
+    const result = await chrome.runtime.sendMessage({
+        action: 'aiApiFetch',
+        url,
+        headers,
+        requestBody,
+    });
 
-    // Some models (e.g. older DeepSeek) don't support response_format — retry without it
-    if (!response.ok && response.status === 400) {
-        const errText = await response.text();
-        if (errText.includes('response_format')) {
-            delete requestBody.response_format;
-            response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(requestBody) });
-        } else {
-            throw new Error(`AI API error ${response.status}: ${errText}`);
-        }
+    if (!result.success) {
+        throw new Error(result.error);
     }
 
-    if (!response.ok) {
-        throw new Error(`AI API error ${response.status}: ${await response.text()}`);
-    }
-
-    const data = await response.json();
-    const rawContent = data.choices?.[0]?.message?.content;
+    const rawContent = result.data.choices?.[0]?.message?.content;
     if (!rawContent) throw new Error('AI API returned an empty response.');
     return extractJson(rawContent);
 }
 
 function buildProfileMarkdown(user, work, edu) {
     let markdown = `# Applicant Profile\n\n`;
-    markdown += `## Personal\n- Name: ${user.firstName || ''} ${user.lastName || ''}\n- Email: ${user.email || ''}\n- Phone: ${user.phone || ''}\n- Location: ${user.city || ''}, ${user.country || ''}\n\n`;
+    markdown += `## Personal\n- Name: ${user.firstName || ''} ${user.lastName || ''}\n- Email: ${user.email || ''}\n- Phone: ${user.phone || ''}\n- Location: ${user.city || ''}${user.stateProvince ? ', ' + user.stateProvince : ''}, ${user.country || ''}\n`;
+    if (user.linkedinUrl) markdown += `- LinkedIn: ${user.linkedinUrl}\n`;
+    if (user.websiteUrl) markdown += `- Website: ${user.websiteUrl}\n`;
+    markdown += '\n';
     markdown += `## Professional Summary\n- Skills: ${user.skills || ''}\n- Expected Salary: ${user.expectedSalary || ''}\n- Available Start Date: ${user.startDate || ''}\n\n`;
     markdown += `## Work Authorization\n- Authorized to work in the US: ${user.isAuthorizedInUS || 'Yes'}\n- Requires sponsorship: ${user.requireSponsorship || 'No'}\n\n`;
 

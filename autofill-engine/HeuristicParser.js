@@ -113,9 +113,12 @@ function findBestMatch(fieldName, allPageFields) {
         phone: ['phone', 'mobile'],
         addressLine1: ['address', 'street'],
         city: ['city', 'town'],
-        postalCode: ['postal code', 'zip code'],
+        stateProvince: ['state', 'province', 'state/province', 'state or province'],
+        postalCode: ['postal code', 'zip code', 'zip'],
         country: ['country'],
         skills: ['skills'],
+        linkedinUrl: ['linkedin', 'linkedin url', 'linkedin profile'],
+        websiteUrl: ['website', 'personal website', 'portfolio', 'personal url'],
         resume: ['resume', 'cv', 'curriculum vitae'],
         // EEO
         gender: ['gender'],
